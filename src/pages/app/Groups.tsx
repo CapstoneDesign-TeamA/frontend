@@ -1,30 +1,60 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { Plus, Users, Menu } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus as PlusIcon, Users, Menu } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchMyGroups, createGroup, Group } from "@/lib/api/groups";
+import { CreateGroupModal, CreateGroupPayload } from "@/components/groups/CreateGroupModal";
+import { useState } from 'react';
 
-/**
- * 그룹 페이지
- * - 참여 중인 그룹 목록 표시
- * - 그룹 생성 버튼 제공
- * - 모든 데이터는 추후 API 연동 예정
- */
 const Groups = () => {
-    // 추후 실제 API 연동 시 React Query로 그룹 목록 가져올 예정
-    const { data, isLoading } = useQuery({
-        queryKey: ["groups"],
-        queryFn: async () => {
-            // TODO: 백엔드 연동 시 fetch("/groups") 등으로 변경
-            return [];
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    // 내 그룹 목록 가져오기
+    const { data, isLoading, isError, error } = useQuery<Group[]>({
+        queryKey: ["groups", "mine"],
+        queryFn: fetchMyGroups,
+        retry: 1,
+    });
+
+    // 그룹 생성 요청
+    const createMutation = useMutation({
+        mutationFn: (payload: { name: string; color?: string; description?: string; imageUrl?: string }) => createGroup(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["groups", "mine"] });
+            alert("그룹이 생성되었습니다.");
+        },
+        onError: (err: unknown) => {
+            let msg = "그룹 생성 중 오류가 발생했습니다.";
+            if (err instanceof Error) msg = err.message;
+            alert(msg);
         },
     });
 
     const groups = data || [];
+    const [openCreate, setOpenCreate] = useState(false);
 
+    const handleCreateSubmit = (payload: CreateGroupPayload) => {
+        createMutation.mutate(payload, { onSuccess: () => setOpenCreate(false) });
+    };
+
+    // 로딩 중
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+            <div className="min-h-screen flex items-center justify-center">
                 그룹 정보를 불러오는 중입니다...
+            </div>
+        );
+    }
+
+    // 에러 발생
+    if (isError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-center">
+                <div>
+                    <p>그룹 정보를 가져오는 중 오류가 발생했습니다.</p>
+                    <p className="text-muted-foreground text-sm mt-2">{String(error)}</p>
+                </div>
             </div>
         );
     }
@@ -37,32 +67,14 @@ const Groups = () => {
                     <Link to="/" className="text-2xl font-bold text-primary">
                         Once
                     </Link>
+
                     <nav className="hidden md:flex items-center gap-6">
-                        <Link
-                            to="/dashboard"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            대시보드
-                        </Link>
-                        <Link
-                            to="/calendar"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            캘린더
-                        </Link>
-                        <Link
-                            to="/groups"
-                            className="text-sm font-medium text-primary"
-                        >
-                            그룹
-                        </Link>
-                        <Link
-                            to="/albums"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            앨범
-                        </Link>
+                        <Link to="/dashboard" className="hover:text-primary">대시보드</Link>
+                        <Link to="/calendar" className="hover:text-primary">캘린더</Link>
+                        <Link to="/groups" className="hover:text-primary text-primary font-semibold">그룹</Link>
+                        <Link to="/albums" className="hover:text-primary">앨범</Link>
                     </nav>
+
                     <Button variant="ghost" size="icon" className="md:hidden">
                         <Menu size={24} />
                     </Button>
@@ -71,27 +83,27 @@ const Groups = () => {
 
             {/* 메인 콘텐츠 */}
             <main className="container py-8">
+                {/* 상단 섹션 */}
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">내 그룹</h1>
-                        <p className="text-muted-foreground">
-                            참여 중인 그룹: {groups.length}개
-                        </p>
+                        <h1 className="text-3xl font-bold">내 그룹</h1>
+                        <p className="text-muted-foreground">참여 중인 그룹: {groups.length}개</p>
                     </div>
-                    <Button>
-                        <Plus size={18} className="mr-2" />
-                        새 그룹 만들기
+                    <Button onClick={() => setOpenCreate(true)} disabled={createMutation.isPending}>
+                        <PlusIcon className="mr-2 h-4 w-4" /> 새 그룹 만들기
                     </Button>
                 </div>
 
                 {/* 그룹 목록 */}
                 {groups.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {groups.map((group: any) => (
+                        {groups.map((group) => (
                             <div
                                 key={group.id}
-                                className="bg-card rounded-xl shadow-card p-6 hover:shadow-hover transition-shadow cursor-pointer"
+                                onClick={() => navigate(`/groups/${group.id}`)}
+                                className="bg-card rounded-xl shadow-card p-6 hover:shadow-hover transition cursor-pointer"
                             >
+                                {/* 그룹 아이콘 */}
                                 <div
                                     className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
                                         group.color || "bg-muted text-muted-foreground"
@@ -99,41 +111,40 @@ const Groups = () => {
                                 >
                                     <Users size={24} />
                                 </div>
+
+                                {/* 그룹 이름 */}
                                 <h3 className="text-xl font-bold mb-3">{group.name}</h3>
+
                                 <div className="space-y-2 text-sm text-muted-foreground">
                                     <p>멤버 {group.membersCount ?? 0}명</p>
                                     <p>
                                         예정된 일정{" "}
-                                        <span className="font-semibold text-foreground">
-                      {group.upcomingEvents ?? 0}개
-                    </span>
+                                        <span className="font-medium text-foreground">
+                                            {group.upcomingEvents ?? 0}개
+                                        </span>
                                     </p>
-                                </div>
-                                <div className="mt-4 pt-4 border-t flex gap-2">
-                                    <Button variant="outline" size="sm" className="flex-1">
-                                        캘린더
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="flex-1">
-                                        앨범
-                                    </Button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    // 그룹이 없을 경우
-                    <div className="flex flex-col items-center justify-center mt-24 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center mt-20">
                         <Users size={48} className="mb-4 opacity-50" />
                         <h3 className="text-lg font-semibold mb-2">참여 중인 그룹이 없습니다</h3>
-                        <p className="text-sm mb-4">
-                            새로운 그룹을 만들어서 친구들과 함께 활동을 시작해보세요.
+                        <p className="text-muted-foreground text-sm mb-4">
+                            새로운 그룹을 만들어 친구들과 활동을 시작해보세요.
                         </p>
-                        <Button>
-                            <Plus size={18} className="mr-2" />
-                            새 그룹 만들기
+                        <Button onClick={() => setOpenCreate(true)}>
+                            <PlusIcon className="mr-2 h-4 w-4" /> 새 그룹 만들기
                         </Button>
                     </div>
                 )}
+                <CreateGroupModal
+                    open={openCreate}
+                    onClose={() => setOpenCreate(false)}
+                    onSubmit={handleCreateSubmit}
+                    loading={createMutation.isPending}
+                />
             </main>
         </div>
     );
