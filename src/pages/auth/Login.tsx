@@ -31,7 +31,7 @@ const Login = () => {
         }
 
         // mockMode 비활성화 (실제 백엔드 연동)
-        const mockMode = false;
+        const mockMode = true;
 
         if (mockMode) {
             setLoading(true);
