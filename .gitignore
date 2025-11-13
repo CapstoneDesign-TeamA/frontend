@@ -1,1 +1,31 @@
+# Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite cache
+.vite/
+node_modules/.vite/
+dist/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VSCode
+.vscode/
+
+# JetBrains (IntelliJ/WebStorm)
+.idea/
+
+# Logs
+*.log
+logs/
