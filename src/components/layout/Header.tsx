@@ -10,12 +10,6 @@ const Header = () => {
     // 현재 경로와 비교해서 메뉴 활성화 여부 확인
     const isActive = (path: string) => location.pathname === path;
 
-    // 네비게이션 메뉴 리스트
-    const navLinks = [
-        { path: "/calendar", label: "캘린더" },
-        { path: "/groups", label: "그룹" },
-        { path: "/albums", label: "앨범" },
-    ];
 
     return (
         // 헤더 전체 영역 (상단 고정)
@@ -25,21 +19,6 @@ const Header = () => {
                 <Link to="/" className="flex items-center space-x-2">
                     <span className="text-2xl font-bold text-primary">Once</span>
                 </Link>
-
-                {/* 데스크톱 네비게이션 메뉴 */}
-                <nav className="hidden md:flex items-center space-x-6">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.path}
-                            to={link.path}
-                            className={`text-sm font-medium transition-colors hover:text-primary ${
-                                isActive(link.path) ? "text-primary" : "text-muted-foreground"
-                            }`}
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                </nav>
 
                 {/* 데스크톱용 로그인 / 회원가입 버튼 */}
                 <div className="hidden md:flex items-center space-x-3">
@@ -65,20 +44,6 @@ const Header = () => {
             {mobileMenuOpen && (
                 <div className="md:hidden border-t bg-background">
                     <nav className="container flex flex-col space-y-4 py-4">
-                        {/* 모바일 메뉴 링크 목록 */}
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                className={`text-sm font-medium transition-colors hover:text-primary ${
-                                    isActive(link.path) ? "text-primary" : "text-muted-foreground"
-                                }`}
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                {link.label}
-                            </Link>
-                        ))}
-
                         {/* 모바일용 로그인 / 회원가입 버튼 */}
                         <div className="flex flex-col space-y-2 pt-4 border-t">
                             <Button variant="ghost" asChild>
