@@ -76,7 +76,6 @@ function ScheduleModal({
 
   const [saving, setSaving] = useState(false);
 
-  /** 유효성 검사 */
   const validate = () => {
     if (!form.title || !form.startDate || !form.endDate) {
       alert("제목, 시작일, 종료일은 필수입니다.");
@@ -91,7 +90,6 @@ function ScheduleModal({
     return true;
   };
 
-  /** 등록/수정 (실제 백엔드 연동) */
   const handleSubmit = async () => {
     if (!validate()) return;
 
@@ -100,15 +98,12 @@ function ScheduleModal({
       memo: form.memo,
       startDateTime: `${form.startDate}T${form.startTime}`,
       endDateTime: `${form.endDate}T${form.endTime}`,
-      // groupId: number | null 로 가야 하는데
-      // 지금은 개인 일정만 다루니까 null로 고정
-      groupId: null,
+      groupId: null, // 그룹 기능 제외
     };
 
     try {
       setSaving(true);
 
-      // 신규 등록
       if (!editingSchedule) {
         const res = await axios.post<CreateScheduleResponse>(
           "/calendar",
@@ -126,9 +121,7 @@ function ScheduleModal({
 
         alert(res.data.message || "일정이 등록되었습니다.");
         onAddedOrUpdated(inserted);
-      }
-      // 수정
-      else {
+      } else {
         const res = await axios.put<UpdateScheduleResponse>(
           `/calendar/${editingSchedule.scheduleId}`,
           {
@@ -154,13 +147,12 @@ function ScheduleModal({
       onClose();
     } catch (err) {
       console.error("일정 저장 실패:", err);
-      alert("일정 저장 중 오류가 발생했습니다.");
+      alert("일정 저장 중 오류 발생");
     } finally {
       setSaving(false);
     }
   };
 
-  /** 삭제 (실제 백엔드 연동) */
   const handleDelete = async () => {
     if (!editingSchedule) return;
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -175,7 +167,7 @@ function ScheduleModal({
       onClose();
     } catch (err) {
       console.error("삭제 실패:", err);
-      alert("일정 삭제 중 오류가 발생했습니다.");
+      alert("일정 삭제 중 오류");
     }
   };
 
@@ -191,6 +183,7 @@ function ScheduleModal({
           </Button>
         </div>
 
+        {/* 폼 입력 */}
         <div className="space-y-4">
           {/* 제목 */}
           <div>
@@ -213,11 +206,7 @@ function ScheduleModal({
                 className="w-full border rounded p-2 text-sm"
                 value={form.startDate}
                 onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    startDate: e.target.value,
-                    // 필요하면 여기서 endDate 보정 가능
-                  }))
+                  setForm((f) => ({ ...f, startDate: e.target.value }))
                 }
               />
             </div>
@@ -273,6 +262,7 @@ function ScheduleModal({
           </div>
         </div>
 
+        {/* 버튼 */}
         <div className="flex justify-end gap-2 mt-5">
           {editingSchedule && (
             <Button variant="destructive" onClick={handleDelete}>
@@ -297,15 +287,42 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(
+    null
+  );
+
+  // ★★★ month / week / year
+  const [viewMode, setViewMode] = useState<"month" | "week" | "year">(
+    "month"
+  );
 
   const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
-  const monthLabel = `${currentDate.getFullYear()}년 ${
-    currentDate.getMonth() + 1
-  }월`;
+  const topLabel =
+  viewMode === "year"
+    ? `${currentDate.getFullYear()}년`
+    : viewMode === "week"
+    ? `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
+    : `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`;
 
-  /** 월별 일정 불러오기 (GET /calendar?year=&month=) */
+  /** 월, 주, 년 이동 로직 통합 */
+  const changePeriod = (offset: number) => {
+    const d = new Date(currentDate);
+
+    if (viewMode === "month") {
+      d.setMonth(d.getMonth() + offset);
+    } else if (viewMode === "week") {
+      d.setDate(d.getDate() + offset * 7);
+    } else if (viewMode === "year") {
+      d.setFullYear(d.getFullYear() + offset);
+    }
+
+    setCurrentDate(d);
+  };
+
+  /** 실제 달력 데이터 */
   const loadMonth = useCallback(async () => {
+    if (viewMode !== "month") return;
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
 
@@ -318,13 +335,12 @@ const Calendar = () => {
       console.error("월별 일정 조회 실패:", err);
       setSchedules([]);
     }
-  }, [currentDate]);
+  }, [currentDate, viewMode]);
 
   useEffect(() => {
     loadMonth();
   }, [loadMonth]);
 
-  /** 일정 추가/수정 반영 */
   const handleAddedOrUpdated = (schedule: Schedule) => {
     setSchedules((prev) => {
       const exists = prev.some((s) => s.scheduleId === schedule.scheduleId);
@@ -336,23 +352,40 @@ const Calendar = () => {
     });
   };
 
-  /** 삭제 반영 */
   const handleDelete = (id: number) => {
-    setSchedules((prev) => prev.filter((s) => s.scheduleId !== id));
+    setSchedules((prev) =>
+      prev.filter((s) => s.scheduleId !== id)
+    );
   };
 
-  /** 월 이동 */
-  const changeMonth = (offset: number) => {
-    const d = new Date(currentDate);
-    d.setMonth(currentDate.getMonth() + offset);
-    setCurrentDate(d);
+  /** 주 계산 */
+  const getWeekDays = (date: Date) => {
+    const curr = new Date(date);
+    const day = curr.getDay();
+    const diff = curr.getDate() - day;
+    const start = new Date(curr.setDate(diff));
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
   };
 
-  const ymd = (date: Date, day: number) => {
+  /** 연 계산 */
+  const getYearMonths = () => {
+    const year = currentDate.getFullYear();
+    return Array.from(
+      { length: 12 },
+      (_, i) => new Date(year, i, 1)
+    );
+  };
+
+  const ymd = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(day).padStart(2, "0");
-    return `${y}-${m}-${dd}`;
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   };
 
   const calendarDays = Array.from({ length: 35 }, (_, i) => {
@@ -404,76 +437,165 @@ const Calendar = () => {
       <main className="container py-8">
         <div className="rounded-xl bg-card p-6 shadow-card">
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-bold">{monthLabel}</h2>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)}>
-                  <ChevronLeft size={20} />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => changeMonth(1)}>
-                  <ChevronRight size={20} />
-                </Button>
-              </div>
+            <div>
+              <h2 className="text-2xl font-bold">{topLabel}</h2>
             </div>
-            <Button
-              onClick={() => {
-                setEditingSchedule(null);
-                setShowModal(true);
-              }}
-            >
-              <Plus size={18} className="mr-2" /> 일정 추가
-            </Button>
-          </div>
 
-          {/* 달력 */}
-          <div className="grid grid-cols-7 gap-2">
-            {daysOfWeek.map((d) => (
-              <div
-                key={d}
-                className="text-center text-sm font-semibold text-muted-foreground py-2"
+            {/* 뷰 모드 + 이동 */}
+            <div className="flex gap-2 items-center">
+              <Button
+                variant={viewMode === "month" ? "default" : "outline"}
+                onClick={() => setViewMode("month")}
               >
-                {d}
-              </div>
-            ))}
+                월
+              </Button>
+              <Button
+                variant={viewMode === "week" ? "default" : "outline"}
+                onClick={() => setViewMode("week")}
+              >
+                주
+              </Button>
+              <Button
+                variant={viewMode === "year" ? "default" : "outline"}
+                onClick={() => setViewMode("year")}
+              >
+                년
+              </Button>
 
-            {calendarDays.map((day, i) => {
-              if (!day) return <div key={i} />;
+              {/* 좌우 이동 버튼 */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => changePeriod(-1)}
+              >
+                <ChevronLeft size={20} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => changePeriod(1)}
+              >
+                <ChevronRight size={20} />
+              </Button>
 
-              const dateKey = ymd(currentDate, day);
-              const daySchedules = schedules.filter((s) =>
-                s.startDateTime.startsWith(dateKey)
-              );
-
-              return (
-                <div
-                  key={i}
-                  className={`aspect-square rounded-lg border p-2 ${
-                    daySchedules.length
-                      ? "bg-primary/10 hover:bg-primary/20"
-                      : "bg-background hover:bg-muted/50"
-                  }`}
-                >
-                  <div className="mb-1 text-sm font-medium">{day}</div>
-                  {daySchedules.map((s) => (
-                    <div
-                      key={s.scheduleId}
-                      onClick={() => {
-                        setEditingSchedule(s);
-                        setShowModal(true);
-                      }}
-                      className="truncate cursor-pointer rounded px-1 py-0.5 text-left text-xs bg-primary/10 text-primary"
-                    >
-                      {s.title}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
+              <Button
+                onClick={() => {
+                  setEditingSchedule(null);
+                  setShowModal(true);
+                }}
+              >
+                <Plus size={18} className="mr-2" /> 일정 추가
+              </Button>
+            </div>
           </div>
+
+          {/* month view */}
+          {viewMode === "month" && (
+            <div className="grid grid-cols-7 gap-2">
+              {daysOfWeek.map((d) => (
+                <div
+                  key={d}
+                  className="text-center text-sm font-semibold text-muted-foreground py-2"
+                >
+                  {d}
+                </div>
+              ))}
+
+              {calendarDays.map((day, i) => {
+                if (!day) return <div key={i} />;
+
+                const dateKey = `${currentDate.getFullYear()}-${String(
+                  currentDate.getMonth() + 1
+                ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+                const daySchedules = schedules.filter((s) =>
+                  s.startDateTime.startsWith(dateKey)
+                );
+
+                return (
+                  <div
+                    key={i}
+                    className="aspect-square rounded-lg border p-2"
+                  >
+                    <div className="mb-1 text-sm font-medium">{day}</div>
+                    {daySchedules.map((s) => (
+                      <div
+                        key={s.scheduleId}
+                        onClick={() => {
+                          setEditingSchedule(s);
+                          setShowModal(true);
+                        }}
+                        className="truncate cursor-pointer rounded px-1 py-0.5 text-left text-xs bg-primary/10 text-primary"
+                      >
+                        {s.title}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* week view */}
+          {viewMode === "week" && (
+            <div className="grid grid-cols-7 gap-2">
+              {getWeekDays(currentDate).map((day, idx) => {
+                const dateKey = ymd(day);
+                const daySchedules = schedules.filter((s) =>
+                  s.startDateTime.startsWith(dateKey)
+                );
+
+                return (
+                  <div
+                    key={idx}
+                    className="aspect-video rounded-lg border p-2"
+                  >
+                    <div className="mb-1 text-sm font-medium">
+                      {day.getMonth() + 1}/{day.getDate()}
+                    </div>
+                    {daySchedules.map((s) => (
+                      <div
+                        key={s.scheduleId}
+                        onClick={() => {
+                          setEditingSchedule(s);
+                          setShowModal(true);
+                        }}
+                        className="truncate cursor-pointer rounded px-1 py-0.5 text-left text-xs bg-primary/10 text-primary"
+                      >
+                        {s.title}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* year view */}
+          {viewMode === "year" && (
+            <div className="grid grid-cols-3 gap-4">
+              {getYearMonths().map((dt, idx) => (
+                <div
+                  key={idx}
+                  className="border rounded-xl p-4 cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    const d = new Date(currentDate);
+                    d.setMonth(idx);
+                    setCurrentDate(d);
+                    setViewMode("month");
+                  }}
+                >
+                  <h3 className="font-bold mb-2 text-center">
+                    {dt.getMonth() + 1}월
+                  </h3>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* 일정 모달 */}
+      {/* 모달 */}
       {showModal && (
         <ScheduleModal
           onClose={() => setShowModal(false)}
