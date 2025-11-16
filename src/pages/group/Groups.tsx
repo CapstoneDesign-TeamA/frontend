@@ -100,8 +100,8 @@ const Groups = () => {
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {groups.map((group) => (
                             <div
-                                key={group.id}
-                                onClick={() => navigate(`/groups/${group.id}`)}
+                                key={group.groupId}
+                                onClick={() => navigate(`/groups/${group.groupId}`)}
                                 className="bg-card rounded-xl shadow-card p-6 hover:shadow-hover transition cursor-pointer"
                             >
                                 <div

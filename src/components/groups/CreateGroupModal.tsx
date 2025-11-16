@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 export interface CreateGroupPayload {
     name: string;
     description?: string;
-    file?: File | null;
+    imageUrl?: string;
 }
 
 interface CreateGroupModalProps {
@@ -27,50 +27,39 @@ interface CreateGroupModalProps {
 }
 
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
-                                                                      open,
-                                                                      onClose,
-                                                                      onSubmit,
-                                                                      loading,
-                                                                  }) => {
+    open,
+    onClose,
+    onSubmit,
+    loading,
+}) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [file, setFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string>("");
+    const [imageUrl, setImageUrl] = useState("");
 
     useEffect(() => {
         if (open) {
             setName("");
             setDescription("");
-            setFile(null);
-            setPreview("");
+            setImageUrl("");
         }
     }, [open]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0] || null;
-        setFile(f);
-
-        if (f) {
-            const url = URL.createObjectURL(f);
-            setPreview(url);
-        }
-    };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) return;
+        const trimmedName = name.trim();
+        if (!trimmedName) return;
 
         onSubmit({
-            name: name.trim(),
-            description: description.trim(),
-            file,
+            name: trimmedName,
+            description: description.trim() || undefined,
+            imageUrl: imageUrl.trim() || undefined,
         });
     };
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-w-lg p-0">
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6 p-6">
                     <DialogHeader>
                         <DialogTitle>그룹 생성</DialogTitle>
                         <DialogDescription>
@@ -79,10 +68,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     </DialogHeader>
 
                     <div className="space-y-4">
-                        {/* 그룹명 */}
                         <div className="space-y-2">
-                            <Label>그룹명 *</Label>
+                            <Label htmlFor="group-name">그룹명 *</Label>
                             <Input
+                                id="group-name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="예: 우리 스터디 그룹"
@@ -90,10 +79,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             />
                         </div>
 
-                        {/* 설명 */}
                         <div className="space-y-2">
-                            <Label>그룹 설명</Label>
+                            <Label htmlFor="group-description">그룹 설명</Label>
                             <Textarea
+                                id="group-description"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={4}
@@ -101,25 +90,27 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             />
                         </div>
 
-                        {/* 이미지 */}
                         <div className="space-y-2">
-                            <Label>대표 이미지 (선택)</Label>
-                            <Input type="file" accept="image/*" onChange={handleFileChange} />
-
-                            {preview && (
-                                <div className="mt-2 flex items-center gap-3">
-                                    <img
-                                        src={preview}
-                                        alt="미리보기"
-                                        className="w-20 h-20 object-cover rounded-lg border"
-                                    />
-                                </div>
-                            )}
+                            <Label htmlFor="group-image-url">대표 이미지 URL</Label>
+                            <Input
+                                id="group-image-url"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                                placeholder="https://example.com/cover.png"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                이미지를 아직 준비하지 않았다면 비워두셔도 됩니다.
+                            </p>
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
                             취소
                         </Button>
                         <Button type="submit" disabled={loading}>
