@@ -1,4 +1,5 @@
 // components/groups/CreateGroupModal.tsx
+
 import React, { useEffect, useState } from "react";
 import {
     Dialog,
@@ -16,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 export interface CreateGroupPayload {
     name: string;
     description?: string;
-    imageUrl?: string;
+    file?: File | null;
 }
 
 interface CreateGroupModalProps {
@@ -27,22 +28,28 @@ interface CreateGroupModalProps {
 }
 
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
-    open,
-    onClose,
-    onSubmit,
-    loading,
-}) => {
+                                                                      open,
+                                                                      onClose,
+                                                                      onSubmit,
+                                                                      loading,
+                                                                  }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [imageUrl, setImageUrl] = useState("");
+    const [imageFile, setImageFile] = useState<File | null>(null); // 실제 선택된 파일
 
+    // 모달 열릴 때마다 폼 초기화
     useEffect(() => {
         if (open) {
             setName("");
             setDescription("");
-            setImageUrl("");
+            setImageFile(null);
         }
     }, [open]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null;
+        setImageFile(file);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,7 +59,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         onSubmit({
             name: trimmedName,
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            file: imageFile ?? undefined, // ✅ 여기서 file 키로 넘김
         });
     };
 
@@ -68,6 +75,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     </DialogHeader>
 
                     <div className="space-y-4">
+                        {/* 그룹명 */}
                         <div className="space-y-2">
                             <Label htmlFor="group-name">그룹명 *</Label>
                             <Input
@@ -76,9 +84,11 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="예: 우리 스터디 그룹"
                                 required
+                                disabled={loading}
                             />
                         </div>
 
+                        {/* 그룹 설명 */}
                         <div className="space-y-2">
                             <Label htmlFor="group-description">그룹 설명</Label>
                             <Textarea
@@ -87,20 +97,26 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={4}
                                 placeholder="그룹에 대한 간단한 설명"
+                                disabled={loading}
                             />
                         </div>
 
+                        {/* 대표 이미지 파일 선택 */}
                         <div className="space-y-2">
-                            <Label htmlFor="group-image-url">대표 이미지 URL</Label>
+                            <Label htmlFor="group-image-file">대표 이미지 파일</Label>
                             <Input
-                                id="group-image-url"
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                placeholder="https://example.com/cover.png"
+                                id="group-image-file"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                disabled={loading}
+                                className="cursor-pointer"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                이미지를 아직 준비하지 않았다면 비워두셔도 됩니다.
-                            </p>
+                            {imageFile && (
+                                <p className="text-xs text-muted-foreground">
+                                    선택된 파일: {imageFile.name}
+                                </p>
+                            )}
                         </div>
                     </div>
 
