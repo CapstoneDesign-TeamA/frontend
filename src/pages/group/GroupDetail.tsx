@@ -35,6 +35,7 @@ import {
     GroupDetailData,
     uploadGroupAlbum,
     leaveGroup,
+    deleteGroup,
 } from "@/lib/api/groups";
 
 
@@ -161,6 +162,44 @@ const GroupDetail = () => {
     const handleLeaveGroup = () => {
         if (!window.confirm("정말 그룹에서 나가시겠습니까?")) return;
         leaveMutation.mutate();
+    };
+
+
+    // ✅ 그룹 삭제
+    const deleteMutation = useMutation({
+        mutationFn: () => deleteGroup(parsedGroupId),
+
+        onSuccess: () => {
+            toast({
+                title: "그룹 삭제 완료",
+                description: "그룹이 성공적으로 삭제되었습니다.",
+            });
+
+            queryClient.invalidateQueries({ queryKey: ["groups", "mine"] });
+            navigate("/groups");
+        },
+
+        onError: (error: unknown) => {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "그룹 삭제 중 문제가 발생했습니다.";
+
+            toast({
+                title: "오류 발생",
+                description: message,
+            });
+        },
+    });
+
+    const handleDeleteGroup = () => {
+        if (!Number.isFinite(parsedGroupId)) return;
+
+        if (!window.confirm("정말 이 그룹을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+            return;
+        }
+
+        deleteMutation.mutate();
     };
 
 
@@ -454,15 +493,25 @@ const GroupDetail = () => {
             </Dialog>
 
 
-            {/* 그룹 나가기 버튼 */}
+            {/* 그룹 나가기 / 삭제 버튼 */}
             <section className="flex justify-center pt-8 border-t">
-                <Button
-                    variant="destructive"
-                    onClick={handleLeaveGroup}
-                    disabled={leaveMutation.isPending}
-                >
-                    {leaveMutation.isPending ? "처리 중..." : "그룹 나가기"}
-                </Button>
+                <div className="flex gap-4">
+                    <Button
+                        variant="outline"
+                        onClick={handleLeaveGroup}
+                        disabled={leaveMutation.isPending || deleteMutation.isPending}
+                    >
+                        {leaveMutation.isPending ? "처리 중..." : "그룹 나가기"}
+                    </Button>
+
+                    <Button
+                        variant="destructive"
+                        onClick={handleDeleteGroup}
+                        disabled={deleteMutation.isPending}
+                    >
+                        {deleteMutation.isPending ? "삭제 중..." : "그룹 삭제"}
+                    </Button>
+                </div>
             </section>
         </div>
     );
