@@ -15,8 +15,8 @@ const Login = () => {
         password: "",
     });
 
-    // 환경변수 기반 백엔드 주소
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+    // 환경변수 기반 백엔드 주소 + 기본값
+    const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,8 +30,8 @@ const Login = () => {
             return;
         }
 
-        // mockMode 비활성화 (실제 백엔드 연동)
-        const mockMode = true;
+        // 실제 백엔드 연동
+        const mockMode = false;
 
         if (mockMode) {
             setLoading(true);
@@ -47,7 +47,6 @@ const Login = () => {
             return;
         }
 
-        // 실제 백엔드 로그인 요청
         try {
             setLoading(true);
 
@@ -60,18 +59,29 @@ const Login = () => {
                 }),
             });
 
-            const data = await res.json();
+            type LoginResponse = {
+                access_token?: string;
+                refresh_token?: string;
+                message?: string;
+            };
+
+            const data: LoginResponse = await res.json();
 
             if (!res.ok) {
                 throw new Error(data?.message || "로그인에 실패했습니다.");
             }
 
-            // JWT 저장
-            if (data?.accessToken) {
-                localStorage.setItem("accessToken", data.accessToken);
+            const accessToken = data.access_token;
+            const refreshToken = data.refresh_token;
+
+            // JWT 저장 (키 여러 개로 저장해두면 나중에 바꿔도 안전)
+            if (accessToken) {
+                localStorage.setItem("access_token", accessToken);
+                localStorage.setItem("accessToken", accessToken);
             }
-            if (data?.refreshToken) {
-                localStorage.setItem("refreshToken", data.refreshToken);
+            if (refreshToken) {
+                localStorage.setItem("refresh_token", refreshToken);
+                localStorage.setItem("refreshToken", refreshToken);
             }
 
             toast({
@@ -79,11 +89,19 @@ const Login = () => {
                 description: "환영합니다.",
             });
 
+            // 라우팅 경로는 프로젝트 라우터에 맞게
             navigate("/dashboard");
-        } catch (err: any) {
+        } catch (err: unknown) {
+            console.error("로그인 실패:", err);
+
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "서버와 통신할 수 없습니다.";
+
             toast({
                 title: "로그인 실패",
-                description: err?.message ?? "서버와 통신할 수 없습니다.",
+                description: message,
                 variant: "destructive",
             });
         } finally {
@@ -94,7 +112,6 @@ const Login = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 to-background p-4">
             <div className="w-full max-w-md">
-
                 <div className="text-center mb-8">
                     <Link to="/" className="inline-block">
                         <h1 className="text-4xl font-bold text-primary mb-2">Once</h1>
@@ -126,26 +143,40 @@ const Login = () => {
                                 placeholder="••••••••"
                                 value={formData.password}
                                 onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        password: e.target.value,
+                                    }))
                                 }
                                 required
                             />
                         </div>
 
-                        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            size="lg"
+                            disabled={loading}
+                        >
                             {loading ? "로그인 중..." : "로그인"}
                         </Button>
                     </form>
 
                     <div className="mt-6 text-center text-sm space-y-2">
                         <div>
-                            <Link to="/auth/find-password" className="text-primary hover:underline">
+                            <Link
+                                to="/auth/find-password"
+                                className="text-primary hover:underline"
+                            >
                                 비밀번호를 잊으셨나요?
                             </Link>
                         </div>
                         <div>
                             계정이 없으신가요?{" "}
-                            <Link to="/auth/signup" className="text-primary hover:underline">
+                            <Link
+                                to="/auth/signup"
+                                className="text-primary hover:underline"
+                            >
                                 회원가입
                             </Link>
                         </div>
