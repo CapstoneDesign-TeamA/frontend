@@ -242,7 +242,8 @@ const Calendar: React.FC = () => {
 
   /** 월별 일정 불러오기 */
   const loadMonth = useCallback(async () => {
-    if (viewMode !== "month") return;
+    //month + week 에서 모두 호출
+    if (viewMode == "year") return;
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
