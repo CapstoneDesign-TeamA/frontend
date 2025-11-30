@@ -246,3 +246,27 @@ export async function deleteGroup(groupId: number) {
         method: "DELETE",
     });
 }
+
+
+/**
+ * ===============================
+ * 그룹 초대
+ * ===============================
+ */
+export async function createInviteLink(groupId: number) {
+    const token = localStorage.getItem("accessToken");
+
+    const res = await fetch(`${API_BASE}/invite/create/${groupId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!res.ok) {
+        throw new Error("초대 링크 생성 실패");
+    }
+
+    return res.json(); // { inviteLink: "https://..." }
+}
