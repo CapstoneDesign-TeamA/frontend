@@ -268,7 +268,21 @@ const GroupDetail = () => {
     );
 
   return (
-    <div className="container space-y-10 py-10">
+    <div className="min-h-screen bg-background">
+
+      <header className="border-b bg-card">
+        <div className="container flex h-16 items-center justify-between">
+          <h1 className="text-2xl font-bold text-primary">Once</h1>
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary">대시보드</a>
+            <a href="/calendar" className="text-sm font-medium text-muted-foreground hover:text-primary">캘린더</a>
+            <a href="/groups" className="text-sm font-medium text-primary">그룹</a>
+            <a href="/albums" className="text-sm font-medium text-muted-foreground hover:text-primary">앨범</a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="container space-y-10 py-10">
       {/* 그룹 헤더 */}
       <section className="flex flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm md:flex-row">
         <div className="flex h-56 w-full items-center justify-center overflow-hidden rounded-lg bg-muted md:w-1/3">
@@ -588,6 +602,7 @@ const GroupDetail = () => {
           </Form>
         </DialogContent>
       </Dialog>
+      </main>
     </div>
   );
 };
