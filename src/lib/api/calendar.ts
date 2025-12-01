@@ -2,10 +2,9 @@
 
 /**
  * ===============================
- * 프론트에서 사용할 타입 정의
+ * 공통 설정
  * ===============================
  */
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 const getToken = () =>
@@ -24,10 +23,7 @@ async function fetcher<T>(input: RequestInfo, init: RequestInit = {}): Promise<T
 
   const res = await fetch(input, {
     ...init,
-    headers: {
-      ...headers,
-      ...(init.headers as Record<string, string> | undefined),
-    },
+    headers: { ...headers, ...(init.headers as Record<string, string> | undefined) },
   });
 
   if (!res.ok) {
@@ -42,7 +38,7 @@ async function fetcher<T>(input: RequestInfo, init: RequestInit = {}): Promise<T
 
 /**
  * ===========================
- * 타입 정의 (snake → camel 변환 전용)
+ * 타입 정의 — 개인 캘린더
  * ===========================
  */
 
@@ -86,12 +82,14 @@ export type DeleteScheduleResponse = {
 
 /**
  * ===========================
- * 월별 일정 불러오기
+ * 개인 캘린더 - 월별 일정
  * GET /calendar?year=&month=
  * ===========================
  */
 export async function fetchMonthSchedules(year: number, month: number): Promise<Schedule[]> {
-  const res = await fetcher<RawMonthSchedulesResponse>(`${API_BASE}/calendar?year=${year}&month=${month}`);
+  const res = await fetcher<RawMonthSchedulesResponse>(
+    `${API_BASE}/calendar?year=${year}&month=${month}`
+  );
 
   return (res.schedules || []).map((s) => ({
     scheduleId: s.schedule_id,
@@ -106,7 +104,7 @@ export async function fetchMonthSchedules(year: number, month: number): Promise<
 
 /**
  * ===========================
- * 일정 생성
+ * 개인 일정 생성
  * ===========================
  */
 export async function createSchedule(payload: {
@@ -141,7 +139,7 @@ export async function createSchedule(payload: {
 
 /**
  * ===========================
- * 일정 수정
+ * 개인 일정 수정
  * ===========================
  */
 export async function updateSchedule(id: number, payload: {
@@ -150,7 +148,6 @@ export async function updateSchedule(id: number, payload: {
   startDateTime: string;
   endDateTime: string;
 }): Promise<Schedule> {
-  
   const body = {
     title: payload.title,
     memo: payload.memo,
@@ -175,7 +172,7 @@ export async function updateSchedule(id: number, payload: {
 
 /**
  * ===========================
- * 일정 삭제
+ * 개인 일정 삭제
  * ===========================
  */
 export async function deleteSchedule(id: number): Promise<string> {
@@ -183,4 +180,138 @@ export async function deleteSchedule(id: number): Promise<string> {
     method: "DELETE",
   });
   return res.message;
+}
+
+/**
+ * ==========================================
+ * 그룹 캘린더 API 
+ * ==========================================
+ */
+/**
+ * ===========================
+ * 타입 정의 — 그룹 캘린더
+ * ===========================
+ */
+
+export type RawGroupSchedule = {
+  schedule_id: number;
+  group_id: number;
+  title: string;
+  date: string;
+  time: string | null;
+  description: string | null;
+  created_at: string;
+};
+
+export type RawGroupSchedulesResponse = {
+  schedules: RawGroupSchedule[];
+};
+
+export type GroupSchedule = {
+  scheduleId: number;
+  groupId: number;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  createdAt: string;
+};
+/**
+ * ===========================
+ * 그룹 일정 조회
+ * GET /groups/{groupId}/schedules?year=&month=
+ * ===========================
+ */
+export async function fetchGroupSchedules(
+  groupId: number,
+  year?: number,
+  month?: number
+): Promise<GroupSchedule[]> {
+
+  const res = await fetcher<{ data: RawGroupSchedule[] }>(
+    `${API_BASE}/groups/${groupId}/schedules`
+  );
+
+  return res.data.map((s) => ({
+    scheduleId: s.schedule_id,
+    groupId: s.group_id,
+    title: s.title,
+    date: s.date,
+    time: s.time ?? "00:00",
+    description: s.description ?? "",
+    createdAt: s.created_at,
+  }));
+}
+
+/**
+ * ===========================
+ * 그룹 Free/Busy 조회
+ * GET /groups/{groupId}/freebusy
+ * ===========================
+ */
+export async function fetchGroupFreeBusy(
+  groupId: number,
+  startDate: string,
+  endDate: string
+): Promise<{
+  availableSlots: { startDateTime: string; endDateTime: string }[];
+  allMembersFreeDays: string[];
+}> {
+  return fetcher(
+    `${API_BASE}/groups/${groupId}/freebusy?startDate=${startDate}&endDate=${endDate}`
+  );
+}
+
+/**
+ * ===========================
+ * 그룹 모임 불가능한 주 조회
+ * GET /groups/{groupId}/unavailable-weeks
+ * ===========================
+ */
+export async function fetchUnavailableWeeks(
+  groupId: number,
+  year: number,
+  month: number
+): Promise<{ unavailableWeeks: { weekNumber: number; reason?: string }[] }> {
+  return fetcher(
+    `${API_BASE}/groups/${groupId}/unavailable-weeks?year=${year}&month=${month}`
+  );
+}
+
+
+// ===========================
+// 그룹 일정 생성
+// POST /groups/{groupId}/schedules
+// ===========================
+export async function createGroupSchedule(
+  groupId: number,
+  payload: {
+    title: string;
+    date: string; // YYYY-MM-DD
+    time? :string;
+    location?: string;
+    description?: string;
+  }
+): Promise<{ scheduleId: number; message: string }> {
+  
+  const body = {
+    title: payload.title,
+    date: payload.date,
+    time: payload.time,
+    location: payload.location ?? "",
+    description: payload.description ?? "",
+  };
+
+  const res = await fetcher<{
+    data: { scheduleId: number };
+    message: string;
+  }>(`${API_BASE}/groups/${groupId}/schedules`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  return {
+    scheduleId: res.data.scheduleId,
+    message: res.message,
+  };
 }
