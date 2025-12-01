@@ -1,3 +1,6 @@
+// src/pages/group/Group.tsx
+
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus as PlusIcon, Users, Menu } from "lucide-react";
