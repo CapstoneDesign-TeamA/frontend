@@ -327,15 +327,16 @@ const GroupDetail = () => {
       </section>
 
       {/* 멤버 + 앨범 + 일정 */}
-      <section className="grid gap-10 lg:grid-cols-2">
-        {/* 왼쪽: 멤버 + 앨범 */}
-        <div className="flex flex-col gap-10">
+      <section className="flex justify-center gap-6 w-full">
+
+        {/* LEFT COLUMN */}
+        <div className="w-[320px] flex flex-col gap-10 shrink-0">
+
           {/* 멤버 */}
           <Card>
             <CardHeader>
               <CardTitle>멤버 ({group.members.length})</CardTitle>
             </CardHeader>
-
             <CardContent>
               {group.members.length ? (
                 <ul className="grid gap-3 md:grid-cols-2">
@@ -349,9 +350,7 @@ const GroupDetail = () => {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  등록된 멤버가 없습니다.
-                </p>
+                <p className="text-sm text-muted-foreground">등록된 멤버가 없습니다.</p>
               )}
             </CardContent>
           </Card>
@@ -361,16 +360,9 @@ const GroupDetail = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>앨범</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  총 {group.albums.length}장
-                </p>
+                <p className="text-sm text-muted-foreground">총 {group.albums.length}장</p>
               </div>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPhotoModalOpen(true)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setPhotoModalOpen(true)}>
                 사진 업로드
               </Button>
             </CardHeader>
@@ -388,95 +380,100 @@ const GroupDetail = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  등록된 사진이 없습니다.
-                </p>
+                <p className="text-sm text-muted-foreground">등록된 사진이 없습니다.</p>
               )}
             </CardContent>
           </Card>
+
         </div>
 
-        {/* 오른쪽: 일정 + 캘린더 */}
-        <Card className="flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>일정</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                총 {groupSchedules?.length ?? 0}건
-              </p>
-            </div>
+        {/* CENTER COLUMN (피드 자리) */}
+        <div className="flex-1 max-w-[800px] mx-auto">
+          <div className="text-center text-muted-foreground py-10 border rounded-lg">
+            피드 기능 준비중...
+          </div>
+        </div>
 
-            <Button
-              size="sm"
-              onClick={() => {
-                setSelectedDate(null);
-                setEditingSchedule(null);
-                setScheduleModalOpen(true);
-              }}
-            >
-              일정 추가
-            </Button>
-          </CardHeader>
+        {/* RIGHT COLUMN */}
+        <div className="w-[340px] flex flex-col gap-6 shrink-0">
 
-          <CardContent className="flex-1 flex flex-col space-y-4">
-            {/* 일정 목록 */}
-            {groupSchedules && groupSchedules.length > 0 ? (
-              <div className="max-h-40 overflow-y-auto space-y-3">
-                {groupSchedules.map((s) => (
-                  <div
-                    key={s.scheduleId}
-                    className="rounded-lg border bg-muted/20 p-3 space-y-2"
-                  >
-                    <div className="flex justify-between text-sm">
-                      <span className="font-semibold">{s.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.date}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setEditingSchedule(s);
-                          setSelectedDate(s.date);
-                          setScheduleModalOpen(true);
-                        }}
-                      >
-                        수정
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteSchedule(s.scheduleId)}
-                      >
-                        삭제
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          <Card className="flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>일정</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  총 {groupSchedules?.length ?? 0}건
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                등록된 일정이 없습니다.
-              </p>
-            )}
 
-            {/* 캘린더 */}
-            <div className="flex-1">
-              <GroupCalendar
-                groupId={parsedGroupId}
-                onDateSelect={(dateStr) => {
-                  setSelectedDate(dateStr);
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSelectedDate(null);
                   setEditingSchedule(null);
                   setScheduleModalOpen(true);
                 }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              >
+                일정 추가
+              </Button>
+            </CardHeader>
+
+            <CardContent className="flex-1 flex flex-col space-y-4">
+              {groupSchedules && groupSchedules.length > 0 ? (
+                <div className="max-h-40 overflow-y-auto space-y-3">
+                  {groupSchedules.map((s) => (
+                    <div
+                      key={s.scheduleId}
+                      className="rounded-lg border bg-muted/20 p-3 space-y-2"
+                    >
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold">{s.title}</span>
+                        <span className="text-xs text-muted-foreground">{s.date}</span>
+                      </div>
+
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setEditingSchedule(s);
+                            setSelectedDate(s.date);
+                            setScheduleModalOpen(true);
+                          }}
+                        >
+                          수정
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteSchedule(s.scheduleId)}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">등록된 일정이 없습니다.</p>
+              )}
+
+              <div className="flex-1">
+                <GroupCalendar
+                  groupId={parsedGroupId}
+                  onDateSelect={(dateStr) => {
+                    setSelectedDate(dateStr);
+                    setEditingSchedule(null);
+                    setScheduleModalOpen(true);
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+
       </section>
 
       {/* 그룹 나가기 / 삭제 */}
