@@ -63,6 +63,11 @@ const Login = () => {
                 access_token?: string;
                 refresh_token?: string;
                 message?: string;
+                user?: {
+                    id: number;
+                    name: string;
+                    email: string;
+                };
             };
 
             const data: LoginResponse = await res.json();
@@ -82,6 +87,12 @@ const Login = () => {
             if (refreshToken) {
                 localStorage.setItem("refresh_token", refreshToken);
                 localStorage.setItem("refreshToken", refreshToken);
+            }
+
+            if (data.user?.id) {
+                localStorage.setItem("user_id", String(data.user.id));
+                localStorage.setItem("user_email", data.user.email);
+                localStorage.setItem("user_name", data.user.name);
             }
 
             toast({

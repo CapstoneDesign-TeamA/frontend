@@ -1,39 +1,127 @@
-import { fetcher } from "@/lib/api/fetcher"; // 너희가 공통 fetcher 쓰고 있다 했음.
+import {fetcher} from "@/lib/api/fetcher"; // 공통 fetcher
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+// ===============================
+// Meeting 타입 정의
+// ===============================
+export interface Meeting {
+    id: number;
+    groupId: number;
+    creatorId: number;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    time?: string;
+    location?: string;
+    participantCount: number;
+}
+
+// 모임 생성 시 Body
+export type MeetingCreateBody = {
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    time?: string;     // optional
+    location?: string;
+};
+
+// -----------------------------
 // 모임 생성
-export async function createMeeting(groupId: number, body: any) {
-  return fetcher(`/groups/${groupId}/meetings`, {
-    method: "POST",
-    body,
-  });
+// -----------------------------
+export async function createMeeting(groupId: number, body: MeetingCreateBody) {
+    return fetcher(`/groups/${groupId}/meetings`, {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
 }
 
-// 모임 목록 조회
-export async function fetchMeetings(groupId: number) {
-  return fetcher(`/groups/${groupId}/meetings`, {
-    method: "GET",
-  });
+// -----------------------------
+// 모임 목록 조회 (타입 지정)
+// -----------------------------
+export async function fetchMeetings(groupId: number): Promise<Meeting[]> {
+    const res = await fetcher(`/groups/${groupId}/meetings`, {method: "GET"});
+
+
+    // 응답은 camelCase 배열이므로 그대로 캐스팅
+    const list = res as Array<Record<string, unknown>>;
+
+    const mapped = list.map((m) => {
+        const item = {
+            id: m.id as number,
+            groupId: m.groupId as number,
+            creatorId: m.creatorId as number,
+            title: m.title as string,
+            description: m.description as string | undefined,
+            startDate: m.startDate as string,
+            endDate: m.endDate as string,          // ★ camelCase
+            time: m.time as string | undefined,
+            location: m.location as string | undefined,
+            participantCount: m.participantCount as number,  // ★ camelCase
+        };
+
+
+        return item;
+    });
+
+    return mapped;
 }
 
+// -----------------------------
 // 참여
+// -----------------------------
 export async function participate(groupId: number, meetingId: number) {
-  return fetcher(`/groups/${groupId}/meetings/${meetingId}/participate`, {
-    method: "POST",
-  });
+    return fetcher(`/groups/${groupId}/meetings/${meetingId}/participate`, {
+        method: "POST",
+    });
 }
 
+// -----------------------------
 // 불참
+// -----------------------------
 export async function decline(groupId: number, meetingId: number) {
-  return fetcher(`/groups/${groupId}/meetings/${meetingId}/decline`, {
-    method: "POST",
-  });
+    return fetcher(`/groups/${groupId}/meetings/${meetingId}/decline`, {
+        method: "POST",
+    });
 }
 
-// 참여자 목록
+// -----------------------------
+// 참여자 목록 조회
+// -----------------------------
 export async function fetchParticipants(groupId: number, meetingId: number) {
-  return fetcher(`/groups/${groupId}/meetings/${meetingId}/participants`, {
-    method: "GET",
-  });
+    return fetcher(`/groups/${groupId}/meetings/${meetingId}/participants`, {
+        method: "GET",
+    });
+}
+
+// -----------------------------
+// 모임 수정
+// -----------------------------
+export async function updateMeeting(
+    groupId: number,
+    meetingId: number,
+    body: {
+        title: string;
+        description?: string;
+        startDate: string;
+        endDate: string;
+        time?: string;
+        location?: string;
+    }
+) {
+    return fetcher(`/groups/${groupId}/meetings/${meetingId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+}
+
+// -----------------------------
+// 모임 삭제 (creator 전용)
+// -----------------------------
+export async function deleteMeeting(groupId: number, meetingId: number) {
+    return fetcher(`/groups/${groupId}/meetings/${meetingId}`, {
+        method: "DELETE",
+    });
 }
