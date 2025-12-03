@@ -10,10 +10,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/dialog.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 
 import {
     Form,
@@ -22,10 +22,10 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form.tsx";
 
-import { useToast } from "@/hooks/use-toast";
-import { createMeeting, updateMeeting, MeetingCreateBody } from "@/lib/api/meetings";
+import { useToast } from "@/hooks/use-toast.ts";
+import { createMeeting, updateMeeting, MeetingCreateBody } from "@/lib/api/meetings.ts";
 
 // ======================
 // Schema

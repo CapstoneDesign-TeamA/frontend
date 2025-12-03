@@ -17,6 +17,8 @@ export interface Meeting {
     location?: string;
     participantCount: number;
     myStatus?: "ACCEPTED" | "DECLINED" | null;
+    participants: string[];
+    declined: string[];
 
 }
 
@@ -60,9 +62,9 @@ export async function fetchMeetings(groupId: number): Promise<Meeting[]> {
             time: m.time as string | undefined,
             location: m.location as string | undefined,
             participantCount: m.participantCount as number,
-
-            // ★ 핵심 추가
             myStatus: (m.myStatus as "ACCEPTED" | "DECLINED" | null) ?? null,
+            participants: (m.participants as string[]) ?? [],
+            declined: (m.declined as string[]) ?? [],
         };
 
         return item;
