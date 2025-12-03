@@ -19,7 +19,10 @@ import {
   updateSchedule,
   deleteSchedule,
   Schedule,
+  fetchGroupSchedules,
 } from "@/lib/api/calendar";
+
+import { fetchMyGroups } from "@/lib/api/groups";
 
 // ====================== 일정 추가/수정 모달 ======================
 function ScheduleModal({
@@ -209,6 +212,61 @@ function ScheduleModal({
     </div>
   );
 }
+// ====================== 그룹 일정 전용 읽기 전용 모달 ======================
+function ReadOnlyGroupModal({
+  onClose,
+  schedule,
+}: {
+  onClose: () => void;
+  schedule: Schedule;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="w-[480px] bg-white dark:bg-card p-6 rounded-xl shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">그룹 일정</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X size={18} />
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm block mb-1">제목</label>
+            <div className="p-2 border rounded bg-muted">{schedule.title}</div>
+          </div>
+
+          <div>
+            <label className="text-sm block mb-1">날짜</label>
+            <div className="p-2 border rounded bg-muted">
+              {schedule.startDateTime.split("T")[0]}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm block mb-1">시간</label>
+            <div className="p-2 border rounded bg-muted">
+              {schedule.startDateTime.slice(11, 16)}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm block mb-1">내용</label>
+            <div className="p-2 border rounded bg-muted whitespace-pre-wrap">
+              {schedule.memo || "(내용 없음)"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose}>
+            닫기
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ====================== 메인 캘린더 페이지 ======================
 const Calendar: React.FC = () => {
@@ -216,7 +274,7 @@ const Calendar: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-
+  const [showReadOnly, setShowReadOnly] = useState<Schedule | null>(null);
   // month / week / year
   const [viewMode, setViewMode] = useState<"month" | "week" | "year">("month");
 
@@ -248,8 +306,29 @@ const Calendar: React.FC = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
 
-    const data = await fetchMonthSchedules(year, month);
-    setSchedules(data);
+    const personal = await fetchMonthSchedules(year, month);
+    const myGroups = await fetchMyGroups();
+
+    //그룹 일정 불러오기
+    const groupSchedules = (
+      await Promise.all(
+        myGroups.map(async (g) => {
+          const list = await fetchGroupSchedules(g.groupId, year, month);
+          return list.map((s) => ({
+            scheduleId: Number(`9${s.scheduleId}`),
+            title: `[${g.name}] ${s.title}`,
+            memo: s.description ?? "",
+            startDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
+            endDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
+            type: "GROUP" as const,
+            color: "#22c55e" as const,
+            userId: g.groupId,
+            userName: g.name,
+          }));
+        })
+      )
+    ).flat();
+    setSchedules([...personal, ...groupSchedules]);
   }, [currentDate, viewMode]);
 
   useEffect(() => {
@@ -405,8 +484,12 @@ const Calendar: React.FC = () => {
                       <div
                         key={s.scheduleId}
                         onClick={() => {
-                          setEditingSchedule(s);
-                          setShowModal(true);
+                          if (s.type === "GROUP") {
+                            setShowReadOnly(s);
+                          } else {
+                            setEditingSchedule(s);
+                            setShowModal(true);
+                          }
                         }}
                         className="truncate cursor-pointer rounded px-1 py-0.5 text-xs bg-primary/10 text-primary"
                       >
@@ -441,8 +524,12 @@ const Calendar: React.FC = () => {
                       <div
                         key={s.scheduleId}
                         onClick={() => {
-                          setEditingSchedule(s);
-                          setShowModal(true);
+                          if (s.type === "GROUP") {
+                            setShowReadOnly(s);
+                          } else {
+                            setEditingSchedule(s);
+                            setShowModal(true);
+                          }
                         }}
                         className="truncate cursor-pointer rounded px-1 py-0.5 text-xs bg-primary/10 text-primary"
                       >
@@ -484,6 +571,12 @@ const Calendar: React.FC = () => {
           onAddedOrUpdated={handleAddedOrUpdated}
           editingSchedule={editingSchedule}
           onDelete={handleDelete}
+        />
+      )}
+      {showReadOnly && (
+        <ReadOnlyGroupModal
+          schedule={showReadOnly}
+          onClose={() => setShowReadOnly(null)}
         />
       )}
     </div>
