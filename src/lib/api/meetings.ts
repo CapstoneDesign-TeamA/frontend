@@ -16,6 +16,8 @@ export interface Meeting {
     time?: string;
     location?: string;
     participantCount: number;
+    myStatus?: "ACCEPTED" | "DECLINED" | null;
+
 }
 
 // 모임 생성 시 Body
@@ -42,26 +44,26 @@ export async function createMeeting(groupId: number, body: MeetingCreateBody) {
 // 모임 목록 조회 (타입 지정)
 // -----------------------------
 export async function fetchMeetings(groupId: number): Promise<Meeting[]> {
-    const res = await fetcher(`/groups/${groupId}/meetings`, {method: "GET"});
+    const res = await fetcher(`/groups/${groupId}/meetings`, { method: "GET" });
 
-
-    // 응답은 camelCase 배열이므로 그대로 캐스팅
     const list = res as Array<Record<string, unknown>>;
 
     const mapped = list.map((m) => {
-        const item = {
+        const item: Meeting = {
             id: m.id as number,
             groupId: m.groupId as number,
             creatorId: m.creatorId as number,
             title: m.title as string,
             description: m.description as string | undefined,
             startDate: m.startDate as string,
-            endDate: m.endDate as string,          // ★ camelCase
+            endDate: m.endDate as string,
             time: m.time as string | undefined,
             location: m.location as string | undefined,
-            participantCount: m.participantCount as number,  // ★ camelCase
-        };
+            participantCount: m.participantCount as number,
 
+            // ★ 핵심 추가
+            myStatus: (m.myStatus as "ACCEPTED" | "DECLINED" | null) ?? null,
+        };
 
         return item;
     });

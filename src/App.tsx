@@ -16,7 +16,7 @@ import Albums from "./pages/app/Albums";
 import Calendar from "./pages/app/Calendar";
 
 import Groups from "./pages/group/Groups";
-import GroupDetail from "./pages/group/GroupDetail"; // ★ 추가
+import GroupDetail from "./pages/group/groupDetail/GroupDetail.tsx"; // ★ 추가
 
 import Contact from "./pages/Contact";
 import Features from "./pages/Features";
