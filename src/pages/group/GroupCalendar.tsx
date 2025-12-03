@@ -110,7 +110,14 @@ const GroupCalendar = ({ groupId, onDateSelect }: GroupCalendarProps) => {
         setGroupSchedules(schedules);
 
         const meetingList = await fetchMeetings(groupId);
-        setMeetings(meetingList);
+        setMeetings(
+            meetingList.map((m) => ({
+                id: m.id,
+                title: m.title,
+                startDate: m.startDate.substring(0, 10),
+                endDate: m.endDate.substring(0, 10),
+            }))
+        );
 
         const personal = await fetchMonthSchedules(year, month);
 

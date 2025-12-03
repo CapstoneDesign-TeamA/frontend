@@ -21,14 +21,17 @@ export function toCamel(input: unknown): unknown {
 }
 
 // --------------------
-// 공통 fetcher
+// 공통 fetcher (FormData 자동 처리 지원)
 // --------------------
 export async function fetcher(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("access_token");
 
+    const isFormData = options.body instanceof FormData;
+
+    // FormData라면 Content-Type 절대 설정하면 안됨
     const headers: HeadersInit = {
-        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(!isFormData ? { "Content-Type": "application/json" } : {}),
         ...options.headers,
     };
 
@@ -42,6 +45,7 @@ export async function fetcher(url: string, options: RequestInit = {}) {
         throw new Error(error || "API Error");
     }
 
+    // 파일 업로드 응답은 JSON
     const json = await response.json();
     return toCamel(json);
 }

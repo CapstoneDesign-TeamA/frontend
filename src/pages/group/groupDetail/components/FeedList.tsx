@@ -4,7 +4,8 @@ import PostCard from "./PostCard";
 
 const FeedList = ({ groupId, userId }) => {
     const { data: feed } = useQuery({
-        queryKey: ["feed", groupId, userId],
+        // ★ feed queryKey 통일
+        queryKey: ["feed", groupId],
         queryFn: () => fetchFeed(groupId),
     });
 
