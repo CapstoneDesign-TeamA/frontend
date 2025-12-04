@@ -25,7 +25,17 @@ import {
 } from "@/components/ui/form.tsx";
 
 import { useToast } from "@/hooks/use-toast.ts";
-import { createMeeting, updateMeeting, MeetingCreateBody } from "@/lib/api/meetings.ts";
+import {
+    createMeeting,
+    updateMeeting,
+    MeetingCreateBody,
+    fetchAiRecommendByGroup,
+} from "@/lib/api/meetings.ts";
+import { createSchedule } from "@/lib/api/calendar.ts";
+
+// ------------------------------
+// Types
+// ------------------------------
 
 const meetingSchema = z.object({
     title: z.string().min(1),
@@ -39,12 +49,37 @@ const meetingSchema = z.object({
 
 export type MeetingFormValues = z.infer<typeof meetingSchema>;
 
+export interface AiRecommendItem {
+    placeName: string;
+    address: string;
+    reason: string;
+    imageUrl?: string;
+}
+
+export interface MeetingDto {
+    id: number;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    time?: string;
+    location: string;
+}
+
+// ------------------------------
+// Props
+// ------------------------------
+
 interface CreateMeetingModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     groupId: number;
-    editingMeeting?: any;
+    editingMeeting?: MeetingDto | null;
 }
+
+// ------------------------------
+// Component
+// ------------------------------
 
 export const CreateMeetingModal = ({
                                        open,
@@ -55,7 +90,8 @@ export const CreateMeetingModal = ({
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
-    const [aiResult, setAiResult] = useState<any[]>([]);
+    const [aiResult, setAiResult] = useState<AiRecommendItem[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const form = useForm<MeetingFormValues>({
         resolver: zodResolver(meetingSchema),
@@ -70,6 +106,9 @@ export const CreateMeetingModal = ({
         },
     });
 
+    // ------------------------------
+    // Editing Mode
+    // ------------------------------
     useEffect(() => {
         if (editingMeeting) {
             form.reset({
@@ -81,7 +120,9 @@ export const CreateMeetingModal = ({
                 location: editingMeeting.location ?? "",
                 singleDay: editingMeeting.startDate === editingMeeting.endDate,
             });
-        } else form.reset();
+        } else {
+            form.reset();
+        }
     }, [editingMeeting]);
 
     const singleDay = form.watch("singleDay");
@@ -93,64 +134,89 @@ export const CreateMeetingModal = ({
         }
     }, [singleDay, startDate]);
 
+    // ------------------------------
+    // Mutation (Create/Update Meeting)
+    // ------------------------------
     const mutation = useMutation({
-        mutationFn: (values: MeetingFormValues) => {
+        mutationFn: async (values: MeetingFormValues) => {
             const body: MeetingCreateBody = {
                 title: values.title,
                 description: values.description,
                 startDate: values.startDate,
-                endDate: values.singleDay
-                    ? values.startDate
-                    : values.endDate || values.startDate,
+                endDate: values.singleDay ? values.startDate : values.endDate || values.startDate,
                 time: values.singleDay ? values.time : undefined,
                 location: values.location,
             };
 
-            return editingMeeting
-                ? updateMeeting(groupId, editingMeeting.id, body)
-                : createMeeting(groupId, body);
+            if (editingMeeting) {
+                return updateMeeting(groupId, editingMeeting.id, body);
+            } else {
+                // 모임 생성
+                const result = await createMeeting(groupId, body);
+
+                // 생성자의 캘린더에 일정 추가
+                try {
+                    const startTime = values.time || "00:00";
+                    const startDateTime = `${values.startDate}T${startTime}:00`;
+
+                    const endDate = values.singleDay ? values.startDate : values.endDate || values.startDate;
+                    const [hour, minute] = startTime.split(":");
+                    const endHour = String(Number(hour) + 1).padStart(2, "0");
+                    const endDateTime = `${endDate}T${endHour}:${minute}:00`;
+
+                    await createSchedule({
+                        title: `[모임] ${values.title}`,
+                        memo: values.description || `그룹 모임 - ${values.location}`,
+                        startDateTime,
+                        endDateTime,
+                        groupId,
+                    });
+                } catch (error) {
+                    console.error("캘린더 일정 추가 실패:", error);
+                }
+
+                return result;
+            }
         },
         onSuccess: () => {
-            toast({ title: editingMeeting ? "모임이 수정되었습니다." : "모임이 생성되었습니다." });
+            toast({
+                title: editingMeeting ? "모임이 수정되었습니다." : "모임이 생성되었습니다.",
+                description: editingMeeting ? "" : "캘린더에 일정이 추가되었습니다."
+            });
             queryClient.invalidateQueries({ queryKey: ["meetings", groupId] });
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] });
             onOpenChange(false);
             form.reset();
         },
     });
 
-    // AI 추천 호출 (스텁 상태)
+    // ------------------------------
+    // AI Recommend
+    // ------------------------------
     const fetchAiRecommend = async () => {
-        // TODO: 실제 /ai/recommend 연동
-        setAiResult([
-            {
-                place_name: "홍대 카페 ○○",
-                address: "서울 마포구 …",
-                reason: "가벼운 모임 성향과 잘 맞습니다.",
-            },
-            {
-                place_name: "보드게임 카페 △△",
-                address: "충주 …",
-                reason: "조금 더 색다른 활동으로 적당합니다.",
-            },
-            {
-                place_name: "스파 이색 테마",
-                address: "서울 강남구 …",
-                reason: "완전히 새로운 경험을 원하는 경우 적합합니다.",
-            },
-        ]);
+        setLoading(true);
+        setAiResult([]);
+
+        try {
+            const data = await fetchAiRecommendByGroup(groupId);
+            setAiResult(data.recommendations);
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // ------------------------------
+    // JSX
+    // ------------------------------
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl p-0">
                 <div className="grid grid-cols-2 gap-6 p-6">
-                    {/* LEFT: FORM */}
+
+                    {/* LEFT FORM */}
                     <div>
                         <Form {...form}>
-                            <form
-                                onSubmit={form.handleSubmit((v) => mutation.mutate(v))}
-                                className="space-y-6"
-                            >
+                            <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
                                 <DialogHeader>
                                     <DialogTitle>{editingMeeting ? "모임 수정" : "모임 생성"}</DialogTitle>
                                 </DialogHeader>
@@ -287,69 +353,82 @@ export const CreateMeetingModal = ({
                     {/* RIGHT: AI 추천 패널 */}
                     <div className="border-l pl-6 flex flex-col h-full">
 
-                        {/* 헤더 영역 */}
                         <div className="p-4 rounded-lg border shadow-sm bg-gradient-to-br from-[#E9F5EC] to-white">
-                            <h3 className="text-base font-semibold text-gray-800 mb-1">
-                                장소 선택이 고민되나요?
-                            </h3>
+                            <h3 className="text-base font-semibold text-gray-800 mb-1">장소 선택이 고민되나요?</h3>
                             <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                                 AI가 그룹의 활동 패턴을 분석해 가장 잘 맞는 장소를 추천해드릴게요.
                             </p>
 
                             <Button
                                 type="button"
+                                disabled={loading}
                                 className="w-full bg-[#2A7E3B] hover:bg-[#256E34] text-white"
                                 onClick={fetchAiRecommend}
                             >
-                                AI 추천 받아보기
+                                {loading ? "활동 분석 중..." : "AI 추천 받아보기"}
                             </Button>
                         </div>
 
-                        {/* 추천 결과 리스트 */}
-                        <div className="mt-6 space-y-4 flex-1 overflow-y-auto pr-2">
+                        {/* 추천 리스트 with scroll + 고정 높이 */}
+                        <div className="mt-6 space-y-4 flex-1 overflow-y-auto pr-2 max-h-[460px]">
 
-                            {aiResult.length === 0 && (
+                            {loading && (
+                                <p className="text-sm text-gray-400 text-center mt-10">
+                                    활동을 분석하고 있습니다...
+                                </p>
+                            )}
+
+                            {!loading && aiResult.length === 0 && (
                                 <p className="text-sm text-gray-400 text-center mt-10">
                                     추천 버튼을 눌러 제안받을 수 있어요.
                                 </p>
                             )}
 
-                            {aiResult.map((r, idx) => (
-                                <div
-                                    key={idx}
-                                    className="p-4 rounded-xl border bg-white shadow-sm hover:shadow-md transition"
-                                >
-                                    {/* 상단 영역 */}
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <p className="font-semibold text-gray-900 text-sm">
-                                                {r.place_name}
-                                            </p>
-                                            <p className="text-xs text-gray-500">{r.address}</p>
+                            {!loading &&
+                                aiResult.map((r, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="p-5 rounded-xl border bg-white shadow-sm hover:shadow-md transition flex flex-col gap-3"
+                                    >
+                                        {/* 장소 제목 + 주소 */}
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex flex-col gap-1">
+
+                                                {/* 제목을 최우선으로 강하게 표시 */}
+                                                <p className="font-semibold text-[17px] text-gray-900 leading-snug">
+                                                    {r.placeName || "제목 없음"}
+                                                </p>
+
+                                                {/* 그 아래 주소 */}
+                                                <p className="text-[12px] text-gray-500 leading-tight">
+                                                    {r.address}
+                                                </p>
+                                            </div>
+
+                                            <span className="text-[11px] font-medium bg-[#E5F4EA] text-[#2A7E3B] px-2 py-1 rounded-md">
+                                                추천 {idx + 1}
+                                            </span>
                                         </div>
 
-                                        <span className="text-xs font-medium bg-[#E5F4EA] text-[#2A7E3B] px-2 py-1 rounded-md">
-                        추천 {idx + 1}
-                    </span>
+                                        {/* 설명 글 (길어도 자연스럽게) */}
+                                        <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line break-words">
+                                            {r.reason}
+                                        </p>
+
+                                        {/* 버튼 */}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-1 w-full border-[#2A7E3B] text-[#2A7E3B] hover:bg-[#E5F4EA]"
+                                            onClick={() => {
+                                                form.setValue("location", r.placeName);
+                                                form.setValue("description", r.reason);  // 설명에도 자동 적용
+                                            }}
+                                        >
+                                            이 장소로 설정하기
+                                        </Button>
                                     </div>
-
-                                    {/* 이유 */}
-                                    <p className="text-sm text-gray-700 leading-relaxed">
-                                        {r.reason}
-                                    </p>
-
-                                    {/* 선택 버튼 */}
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mt-3 w-full border-[#2A7E3B] text-[#2A7E3B] hover:bg-[#E5F4EA]"
-                                        onClick={() => form.setValue("location", r.place_name)}
-                                    >
-                                        이 장소로 설정하기
-                                    </Button>
-                                </div>
-                            ))}
-
+                                ))}
                         </div>
                     </div>
                 </div>

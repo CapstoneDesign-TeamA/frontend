@@ -1,13 +1,13 @@
 // src/pages/group/Group.tsx
 
-
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
-import { Plus as PlusIcon, Users, Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus as PlusIcon, Users } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchMyGroups, createGroup, Group } from "@/lib/api/groups";
 import { CreateGroupModal, CreateGroupPayload } from "@/components/groups/CreateGroupModal";
 import { useState } from "react";
+import AppHeader from "@/components/layout/AppHeader";
 
 const Groups = () => {
     const navigate = useNavigate();
@@ -62,26 +62,8 @@ const Groups = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* 헤더 */}
-            <header className="border-b bg-card">
-                <div className="container flex h-16 items-center justify-between">
-                    <Link to="/" className="text-2xl font-bold text-primary">
-                        Once
-                    </Link>
-
-                    <nav className="hidden md:flex items-center gap-6">
-                        <Link to="/dashboard" className="hover:text-primary">대시보드</Link>
-                        <Link to="/calendar" className="hover:text-primary">캘린더</Link>
-                        <Link to="/groups" className="text-primary font-semibold hover:text-primary">그룹</Link>
-                        <Link to="/albums" className="hover:text-primary">앨범</Link>
-                    </nav>
-
-                    <Button variant="ghost" size="icon" className="md:hidden">
-                        <Menu size={24} />
-                    </Button>
-                </div>
-            </header>
+        <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30">
+            <AppHeader />
 
             {/* 본문 */}
             <main className="container py-8">

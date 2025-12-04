@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {uploadGroupAlbum} from "@/lib/api/groups.ts";
 
 // -----------------------------
 // Zod Schema (여러 파일 업로드)
@@ -41,14 +42,12 @@ const CreatePostModal = ({
                              open,
                              onOpenChange,
                              groupId,
-                             userId,
                              type = "GENERAL",
                              meetingId,
                          }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     groupId: number;
-    userId: number;
     type?: string;
     meetingId?: number;
 }) => {
@@ -67,17 +66,33 @@ const CreatePostModal = ({
     // mutation
     // -----------------------------
     const mutation = useMutation({
-        mutationFn: (values: FormValues) =>
-            createPost(groupId, {
+        mutationFn: async (values: FormValues) => {
+            // 1. 게시글 먼저 작성
+            await createPost(groupId, {
                 content: values.content,
                 type: type,
                 meetingId: meetingId,
                 files: values.files ?? [],
-            }),
+            });
+
+            // 2. 이미지가 있으면 각각을 앨범에도 추가
+            if (values.files && values.files.length > 0) {
+                const uploadPromises = values.files.map((file, index) =>
+                    uploadGroupAlbum({
+                        groupId,
+                        title: `${values.content.slice(0, 20)}... (${index + 1})`,
+                        description: values.content,
+                        file,
+                    })
+                );
+                await Promise.all(uploadPromises);
+            }
+        },
         onSuccess: () => {
             toast({ title: "게시글이 등록되었습니다." });
 
             queryClient.invalidateQueries({ queryKey: ["feed", groupId] });
+            queryClient.invalidateQueries({ queryKey: ["groupDetail", groupId] });
 
             onOpenChange(false);
             form.reset();

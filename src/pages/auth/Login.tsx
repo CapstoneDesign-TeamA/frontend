@@ -65,12 +65,14 @@ const Login = () => {
                 message?: string;
                 user?: {
                     id: number;
-                    name: string;
+                    nickname: string;
                     email: string;
                 };
             };
 
             const data: LoginResponse = await res.json();
+
+            console.log("로그인 응답 데이터:", data); // 디버깅용
 
             if (!res.ok) {
                 throw new Error(data?.message || "로그인에 실패했습니다.");
@@ -79,7 +81,7 @@ const Login = () => {
             const accessToken = data.access_token;
             const refreshToken = data.refresh_token;
 
-            // JWT 저장 (키 여러 개로 저장해두면 나중에 바꿔도 안전)
+            // JWT 저장
             if (accessToken) {
                 localStorage.setItem("access_token", accessToken);
                 localStorage.setItem("accessToken", accessToken);
@@ -90,9 +92,11 @@ const Login = () => {
             }
 
             if (data.user?.id) {
+                console.log("사용자 정보:", data.user); // 디버깅용
                 localStorage.setItem("user_id", String(data.user.id));
                 localStorage.setItem("user_email", data.user.email);
-                localStorage.setItem("user_name", data.user.name);
+                localStorage.setItem("nickname", data.user.nickname);
+                console.log("localStorage에 저장된 nickname:", localStorage.getItem("nickname")); // 디버깅용
             }
 
             toast({

@@ -1,15 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Plus, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-
+import AppHeader from "@/components/layout/AppHeader";
 /**
- * 캘린더 페이지
+ * 온보딩 페이지
  * - 일정 조회 및 추가 기능
  * - 데이터는 추후 API로 연동 예정
  */
-const Calendar = () => {
+const Onboarding = () => {
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const [currentMonth, setCurrentMonth] = useState("2025년 1월");
 
@@ -43,43 +42,7 @@ const Calendar = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* 상단 헤더 */}
-            <header className="border-b bg-card">
-                <div className="container flex h-16 items-center justify-between">
-                    <Link to="/" className="text-2xl font-bold text-primary">
-                        Once
-                    </Link>
-                    <nav className="hidden md:flex items-center gap-6">
-                        <Link
-                            to="/dashboard"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            대시보드
-                        </Link>
-                        <Link
-                            to="/calendar"
-                            className="text-sm font-medium text-primary"
-                        >
-                            캘린더
-                        </Link>
-                        <Link
-                            to="/groups"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            그룹
-                        </Link>
-                        <Link
-                            to="/albums"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary"
-                        >
-                            앨범
-                        </Link>
-                    </nav>
-                    <Button variant="ghost" size="icon" className="md:hidden">
-                        <Menu size={24} />
-                    </Button>
-                </div>
-            </header>
+            <AppHeader />
 
             {/* 메인 콘텐츠 */}
             <main className="container py-8">
@@ -195,4 +158,4 @@ const Calendar = () => {
     );
 };
 
-export default Calendar;
+export default Onboarding;

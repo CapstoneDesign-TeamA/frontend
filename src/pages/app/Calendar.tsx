@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import AppHeader from "@/components/layout/AppHeader";
 import {
   X,
   Plus,
-  Menu,
   ChevronLeft,
   ChevronRight,
   Trash2,
@@ -115,7 +114,7 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 flex items-center justify-center z-50">
       <div className="w-[520px] bg-white dark:bg-card p-6 rounded-xl shadow-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">
@@ -383,31 +382,7 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* 헤더 */}
-      <header className="border-b bg-card">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">
-            Once
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/dashboard" className="hover:text-primary text-sm text-muted-foreground">
-              대시보드
-            </Link>
-            <Link to="/calendar" className="text-sm font-medium text-primary">
-              캘린더
-            </Link>
-            <Link to="/groups" className="hover:text-primary text-sm text-muted-foreground">
-              그룹
-            </Link>
-            <Link to="/albums" className="hover:text-primary text-sm text-muted-foreground">
-              앨범
-            </Link>
-          </nav>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu size={24} />
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* 메인 */}
       <main className="container py-8">

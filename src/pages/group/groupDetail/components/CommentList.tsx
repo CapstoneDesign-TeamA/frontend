@@ -52,11 +52,28 @@ const CommentList = ({
 
                 return (
                     <div key={c.id} className="pb-3 border-b border-gray-200">
-                        {/* 상단: 닉네임 + 버튼 */}
+                        {/* 상단: 프로필 + 닉네임 + 버튼 */}
                         <div className="flex justify-between items-center">
-                            <span className="font-medium text-sm">
-                                {c.nickname ?? `사용자 ${c.userId}`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center overflow-hidden">
+                                    {userProfileImage && isWriter ? (
+                                        <img
+                                            src={userProfileImage}
+                                            alt="profile"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = sproutImg;
+                                                e.currentTarget.className = "w-5 h-5 object-contain";
+                                            }}
+                                        />
+                                    ) : (
+                                        <img src={sproutImg} alt="profile" className="w-5 h-5 object-contain" />
+                                    )}
+                                </div>
+                                <span className="font-medium text-sm">
+                                    {c.nickname ?? `사용자 ${c.userId}`}
+                                </span>
+                            </div>
 
                             {isWriter && (
                                 <div className="flex gap-2 items-center">

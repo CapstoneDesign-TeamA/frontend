@@ -14,9 +14,10 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/app/Dashboard";
 import Albums from "./pages/app/Albums";
 import Calendar from "./pages/app/Calendar";
+import MyPage from "./pages/app/MyPage";
 
 import Groups from "./pages/group/Groups";
-import GroupDetail from "./pages/group/groupDetail/GroupDetail.tsx"; // ★ 추가
+import GroupDetail from "./pages/group/groupDetail/GroupDetail.tsx";
 
 import Contact from "./pages/Contact";
 import Features from "./pages/Features";
@@ -43,10 +44,11 @@ const App = () => (
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/albums" element={<Albums />} />
                     <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/mypage" element={<MyPage />} />
 
                     {/* 그룹 기능 */}
                     <Route path="/groups" element={<Groups />} />
-                    <Route path="/groups/:groupId" element={<GroupDetail />} /> {/* ★ 중요 ★ */}
+                    <Route path="/groups/:groupId" element={<GroupDetail />} />
 
                     {/* 기타 */}
                     <Route path="/contact" element={<Contact />} />
