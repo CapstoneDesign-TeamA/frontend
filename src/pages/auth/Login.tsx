@@ -67,6 +67,7 @@ const Login = () => {
                     id: number;
                     nickname: string;
                     email: string;
+                    profileImage?: string;
                 };
             };
 
@@ -96,6 +97,9 @@ const Login = () => {
                 localStorage.setItem("user_id", String(data.user.id));
                 localStorage.setItem("user_email", data.user.email);
                 localStorage.setItem("nickname", data.user.nickname);
+                // ★ 추가: nickname과 profileImage 저장
+                localStorage.setItem("user_nickname", data.user.nickname || "");
+                localStorage.setItem("user_profile_image", data.user.profileImage || "");
                 console.log("localStorage에 저장된 nickname:", localStorage.getItem("nickname")); // 디버깅용
             }
 

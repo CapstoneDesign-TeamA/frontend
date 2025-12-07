@@ -18,6 +18,7 @@ import MyPage from "./pages/app/MyPage";
 
 import Groups from "./pages/group/Groups";
 import GroupDetail from "./pages/group/groupDetail/GroupDetail.tsx";
+import AcceptInvite from "./pages/group/AcceptInvite";
 
 import Contact from "./pages/Contact";
 import Features from "./pages/Features";
@@ -49,6 +50,7 @@ const App = () => (
                     {/* 그룹 기능 */}
                     <Route path="/groups" element={<Groups />} />
                     <Route path="/groups/:groupId" element={<GroupDetail />} />
+                    <Route path="/invite" element={<AcceptInvite />} />
 
                     {/* 기타 */}
                     <Route path="/contact" element={<Contact />} />

@@ -271,6 +271,7 @@ function ReadOnlyGroupModal({
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showReadOnly, setShowReadOnly] = useState<Schedule | null>(null);
@@ -302,32 +303,37 @@ const Calendar: React.FC = () => {
     //month + week 에서 모두 호출
     if (viewMode == "year") return;
 
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
+    setIsLoading(true);
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
 
-    const personal = await fetchMonthSchedules(year, month);
-    const myGroups = await fetchMyGroups();
+      const personal = await fetchMonthSchedules(year, month);
+      const myGroups = await fetchMyGroups();
 
-    //그룹 일정 불러오기
-    const groupSchedules = (
-      await Promise.all(
-        myGroups.map(async (g) => {
-          const list = await fetchGroupSchedules(g.groupId, year, month);
-          return list.map((s) => ({
-            scheduleId: Number(`9${s.scheduleId}`),
-            title: `[${g.name}] ${s.title}`,
-            memo: s.description ?? "",
-            startDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
-            endDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
-            type: "GROUP" as const,
-            color: "#22c55e" as const,
-            userId: g.groupId,
-            userName: g.name,
-          }));
-        })
-      )
-    ).flat();
-    setSchedules([...personal, ...groupSchedules]);
+      //그룹 일정 불러오기
+      const groupSchedules = (
+        await Promise.all(
+          myGroups.map(async (g) => {
+            const list = await fetchGroupSchedules(g.groupId, year, month);
+            return list.map((s) => ({
+              scheduleId: Number(`9${s.scheduleId}`),
+              title: `[${g.name}] ${s.title}`,
+              memo: s.description ?? "",
+              startDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
+              endDateTime: `${s.date}T${(s.time ?? "00:00")}:00`,
+              type: "GROUP" as const,
+              color: "#22c55e" as const,
+              userId: g.groupId,
+              userName: g.name,
+            }));
+          })
+        )
+      ).flat();
+      setSchedules([...personal, ...groupSchedules]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [currentDate, viewMode]);
 
   useEffect(() => {
@@ -379,6 +385,21 @@ const Calendar: React.FC = () => {
     const dateNum = idx - startWeekDay + 1;
     return dateNum < 1 || dateNum > daysInMonth ? null : dateNum;
   });
+
+  if (isLoading) {
+    return (
+      <>
+        <AppHeader />
+        <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#2f7e33] border-t-transparent"></div>
+            <p className="text-lg font-medium text-gray-700">캘린더를 불러오는 중입니다...</p>
+            <p className="text-sm text-gray-500">잠시만 기다려주세요</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -447,9 +468,16 @@ const Calendar: React.FC = () => {
                   currentDate.getMonth() + 1
                 ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-                const daySchedules = schedules.filter((s) =>
-                  s.startDateTime.startsWith(dateKey)
-                );
+                const currentDayDate = new Date(dateKey);
+
+                // 해당 날짜에 표시할 일정 필터링 (시작일-종료일 범위 포함)
+                const daySchedules = schedules.filter((s) => {
+                  const startDate = new Date(s.startDateTime.split("T")[0]);
+                  const endDate = new Date(s.endDateTime.split("T")[0]);
+
+                  // 현재 날짜가 시작일과 종료일 사이에 있는지 확인
+                  return currentDayDate >= startDate && currentDayDate <= endDate;
+                });
 
                 return (
                   <div key={i} className="aspect-square rounded-lg border p-2">
@@ -466,7 +494,11 @@ const Calendar: React.FC = () => {
                             setShowModal(true);
                           }
                         }}
-                        className="truncate cursor-pointer rounded px-1 py-0.5 text-xs bg-primary/10 text-primary"
+                        className={`truncate cursor-pointer rounded px-1 py-0.5 text-xs ${
+                          s.type === "GROUP"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-primary/10 text-primary"
+                        }`}
                       >
                         {s.title}
                       </div>
@@ -485,9 +517,16 @@ const Calendar: React.FC = () => {
                   day.getMonth() + 1
                 ).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
 
-                const daySchedules = schedules.filter((s) =>
-                  s.startDateTime.startsWith(dateKey)
-                );
+                const currentDayDate = new Date(dateKey);
+
+                // 해당 날짜에 표시할 일정 필터링 (시작일-종료일 범위 포함)
+                const daySchedules = schedules.filter((s) => {
+                  const startDate = new Date(s.startDateTime.split("T")[0]);
+                  const endDate = new Date(s.endDateTime.split("T")[0]);
+
+                  // 현재 날짜가 시작일과 종료일 사이에 있는지 확인
+                  return currentDayDate >= startDate && currentDayDate <= endDate;
+                });
 
                 return (
                   <div key={idx} className="aspect-video rounded-lg border p-2">
@@ -506,7 +545,11 @@ const Calendar: React.FC = () => {
                             setShowModal(true);
                           }
                         }}
-                        className="truncate cursor-pointer rounded px-1 py-0.5 text-xs bg-primary/10 text-primary"
+                        className={`truncate cursor-pointer rounded px-1 py-0.5 text-xs ${
+                          s.type === "GROUP"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-primary/10 text-primary"
+                        }`}
                       >
                         {s.title}
                       </div>

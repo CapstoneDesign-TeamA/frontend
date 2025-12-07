@@ -82,11 +82,20 @@ const MiniCalendar = ({ events }: { events: DashboardEvent[] }) => {
     const startDay = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
 
-    // 날짜별 이벤트 맵 생성
+    // 날짜별 이벤트 맵 생성 (시작일~종료일 범위 포함)
     const eventsByDate = events.reduce((acc, event) => {
-        const day = new Date(event.date).getDate();
-        if (!acc[day]) acc[day] = [];
-        acc[day].push(event);
+        const startDate = new Date(event.date);
+        const startDay = startDate.getDate();
+
+        // endDate는 start_date_time에서 계산 (백엔드에서 제공되지 않으면 시작일과 동일)
+        // 만약 이벤트 객체에 endDate가 있다면 사용, 없으면 시작일과 동일하게 처리
+        const endDay = startDay; // 기본값은 시작일과 동일
+
+        // 시작일부터 종료일까지 모든 날짜에 이벤트 추가
+        for (let day = startDay; day <= endDay; day++) {
+            if (!acc[day]) acc[day] = [];
+            acc[day].push(event);
+        }
         return acc;
     }, {} as Record<number, DashboardEvent[]>);
 
@@ -311,9 +320,16 @@ const Dashboard = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-gray-500">
-                대시보드 데이터를 불러오는 중입니다...
-            </div>
+            <>
+                <AppHeader />
+                <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#2f7e33] border-t-transparent"></div>
+                        <p className="text-lg font-medium text-gray-700">대시보드를 불러오는 중입니다...</p>
+                        <p className="text-sm text-gray-500">잠시만 기다려주세요</p>
+                    </div>
+                </div>
+            </>
         );
     }
 
@@ -383,7 +399,7 @@ const Dashboard = () => {
                                 >
                                     <Link to="/albums">
                                         <Image className="mr-2 h-4 w-4" />
-                                        사진 올리기
+                                        앨범 보기
                                     </Link>
                                 </Button>
                             </div>
@@ -509,18 +525,22 @@ const Dashboard = () => {
                                             className="group rounded-xl border-2 border-gray-100 hover:border-gray-300 hover:shadow-lg transition-all overflow-hidden bg-white"
                                         >
                                             {/* 대표 이미지 */}
-                                            <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                                            <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden flex items-center justify-center">
                                                 {g.imageUrl ? (
                                                     <img
                                                         src={g.imageUrl}
                                                         alt={g.name}
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                        className="max-w-full max-h-full object-contain"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = "none";
+                                                        }}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
                                                         <Users size={40} className="text-gray-400 opacity-50" />
                                                     </div>
                                                 )}
+
                                                 {/* 멤버 수 뱃지 */}
                                                 <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm">
                                                     <Users size={12} className="text-white" />

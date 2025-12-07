@@ -57,9 +57,16 @@ const Albums = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-                앨범 데이터를 불러오는 중입니다...
-            </div>
+            <>
+                <AppHeader />
+                <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#2f7e33] border-t-transparent"></div>
+                        <p className="text-lg font-medium text-gray-700">앨범을 불러오는 중입니다...</p>
+                        <p className="text-sm text-gray-500">잠시만 기다려주세요</p>
+                    </div>
+                </div>
+            </>
         );
     }
 

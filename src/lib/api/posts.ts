@@ -12,6 +12,8 @@ export type Post = {
     images: string[];
     likeCount: number;
     myLiked: boolean;
+    commentCount?: number;
+    nickname?: string;
     aiKeywords?: string;
     aiSentiment?: string;
     aiSummary?: string;

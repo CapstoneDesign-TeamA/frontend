@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import AppHeader from "@/components/layout/AppHeader";
 import { User, Mail, Calendar, Users, Image as ImageIcon, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import { fetchMyGroups, fetchGroupDetail } from "@/lib/api/groups";
 import sproutImg from "@/assets/sprout.png";
 import {updateProfile, fetchMyProfile} from "@/lib/api/user";
@@ -16,9 +16,10 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const MyPage = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
 
     // API로 사용자 프로필 정보 가져오기
-    const { data: profileData } = useQuery({
+    const { data: profileData, isLoading: profileLoading } = useQuery({
         queryKey: ["myProfile"],
         queryFn: fetchMyProfile,
     });
@@ -62,7 +63,7 @@ const MyPage = () => {
 
 
     // 통계 데이터 가져오기
-    const { data: statsData } = useQuery({
+    const { data: statsData, isLoading: statsLoading } = useQuery({
         queryKey: ["myStats"],
         queryFn: async () => {
             // 1. 참여 중인 그룹 목록
@@ -143,9 +144,15 @@ const MyPage = () => {
         onSuccess: (data) => {
             // 로컬스토리지 업데이트
             localStorage.setItem("nickname", data.nickname);
+            localStorage.setItem("user_nickname", data.nickname);
             if (data.profileImage) {
                 localStorage.setItem("user_profile_image", data.profileImage);
             }
+
+            // React Query 캐시 무효화하여 최신 데이터 다시 가져오기
+            queryClient.invalidateQueries({ queryKey: ["myProfile"] });
+            queryClient.invalidateQueries({ queryKey: ["myStats"] });
+
             setIsEditing(false);
             toast({
                 title: "프로필 수정 완료",
@@ -164,6 +171,22 @@ const MyPage = () => {
     const handleSave = () => {
         updateProfileMutation.mutate();
     };
+
+    // 로딩 중일 때
+    if (profileLoading || statsLoading) {
+        return (
+            <>
+                <AppHeader />
+                <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#2f7e33] border-t-transparent"></div>
+                        <p className="text-lg font-medium text-gray-700">프로필 정보를 불러오는 중입니다...</p>
+                        <p className="text-sm text-gray-500">잠시만 기다려주세요</p>
+                    </div>
+                </div>
+            </>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30">

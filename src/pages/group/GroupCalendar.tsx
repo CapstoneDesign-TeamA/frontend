@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 
 import {
     fetchGroupSchedules,
-    fetchMonthSchedules
+    fetchMonthSchedules,
+    fetchGroupMembersSchedules
 } from "@/lib/api/calendar";
 
 import { fetchMeetings } from "@/lib/api/meetings";
@@ -119,9 +120,10 @@ const GroupCalendar = ({ groupId, onDateSelect }: GroupCalendarProps) => {
             }))
         );
 
-        const personal = await fetchMonthSchedules(year, month);
+        // 그룹원들의 개인 일정 가져오기
+        const groupMembersPersonal = await fetchGroupMembersSchedules(groupId, year, month);
 
-        const filteredPersonal = personal
+        const filteredPersonal = groupMembersPersonal
             .filter((s) => s.type === "PERSONAL")
             .map((s) => ({
                 title: s.title,

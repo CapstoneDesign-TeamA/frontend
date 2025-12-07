@@ -32,7 +32,7 @@ const AlbumCard = ({ albums, groupId }) => {
                     </Button>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
                     {albums.length ? (
                         <>
                             <div className="grid grid-cols-2 gap-3 mb-3">
@@ -65,7 +65,12 @@ const AlbumCard = ({ albums, groupId }) => {
             </Card>
 
             <PhotoUploadModal open={openUpload} onOpenChange={setOpenUpload} groupId={groupId} />
-            <AlbumViewModal open={openView} onOpenChange={setOpenView} albums={albums} />
+            <AlbumViewModal
+                open={openView}
+                onOpenChange={setOpenView}
+                albums={albums}
+                groupId={groupId}
+            />
         </>
     );
 };

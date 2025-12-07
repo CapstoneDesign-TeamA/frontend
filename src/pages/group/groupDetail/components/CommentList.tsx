@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import sproutImg from "@/assets/sprout.png";
+import { fetchMyProfile } from "@/lib/api/user";
 
 const CommentList = ({
                          groupId,
@@ -15,6 +17,14 @@ const CommentList = ({
     userId: number;
 }) => {
     const queryClient = useQueryClient();
+
+    // 사용자 프로필 정보 가져오기
+    const { data: userInfo } = useQuery({
+        queryKey: ["userInfo"],
+        queryFn: fetchMyProfile,
+    });
+
+    const userProfileImage = userInfo?.profileImage;
 
     const { data: comments } = useQuery({
         queryKey: ["comments", postId],

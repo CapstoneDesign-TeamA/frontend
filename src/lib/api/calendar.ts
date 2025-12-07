@@ -149,14 +149,19 @@ export async function fetchDailySchedules(date: string): Promise<DailySchedule[]
         `${API_BASE}/calendar/date/${date}`
     );
 
-    return res.schedules.map((s) => ({
-        scheduleId: s.schedule_id,
-        title: s.title,
-        startDateTime: s.start_date_time,
-        endDateTime: s.end_date_time,
-        userId: s.user_id,
-        userName: s.user_name,
-    }));
+    // 현재 로그인한 사용자의 일정만 필터링
+    const currentUserId = Number(localStorage.getItem("user_id"));
+
+    return res.schedules
+        .filter((s) => s.user_id === currentUserId)
+        .map((s) => ({
+            scheduleId: s.schedule_id,
+            title: s.title,
+            startDateTime: s.start_date_time,
+            endDateTime: s.end_date_time,
+            userId: s.user_id,
+            userName: s.user_name,
+        }));
 }
 
 /**
@@ -311,4 +316,38 @@ export async function fetchGroupBusyCount(
     return fetcher(
         `${API_BASE}/calendar/group/${groupId}/busy-count?startDate=${startDate}&endDate=${endDate}`
     );
+}
+
+/**
+ * ===========================
+ * 그룹원들의 개인 일정 조회 (월 단위)
+ * GET /calendar/group/{groupId}/members?year={year}&month={month}
+ * ===========================
+ */
+export async function fetchGroupMembersSchedules(
+    groupId: number,
+    year: number,
+    month: number
+): Promise<Schedule[]> {
+    try {
+        const res = await fetcher<RawMonthSchedulesResponse>(
+            `${API_BASE}/calendar/group/${groupId}/members?year=${year}&month=${month}`
+        );
+
+        return res.schedules.map((s) => ({
+            scheduleId: s.schedule_id,
+            title: s.title,
+            memo: s.memo,
+            startDateTime: s.start_date_time,
+            endDateTime: s.end_date_time,
+            type: s.type || "PERSONAL",
+            color: s.color,
+            userId: s.user_id,
+            userName: s.user_name,
+        }));
+    } catch (error) {
+        // 백엔드에 해당 API가 없는 경우 빈 배열 반환
+        console.warn("그룹원 일정 조회 실패:", error);
+        return [];
+    }
 }

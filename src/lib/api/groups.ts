@@ -222,18 +222,29 @@ export async function uploadGroupAlbum({
     });
 }
 
-/**
- * ===============================
- * 그룹 나가기 (POST /groups/{id}/leave)
- * ===============================
- */
-export async function leaveGroup(groupId: number): Promise<{ message: string }> {
-    if (!Number.isFinite(groupId)) {
-        throw new Error("유효하지 않은 그룹 ID입니다.");
+export async function deleteAlbumByUrl(groupId: number, imageUrl: string): Promise<{ message: string }> {
+    if (!Number.isFinite(groupId) || !imageUrl) {
+        throw new Error("유효하지 않은 요청입니다.");
     }
 
-    return fetcher(`${API_BASE}/groups/${groupId}/leave`, {
-        method: "POST",
+    const encoded = encodeURIComponent(imageUrl);
+    return fetcher(`${API_BASE}/groups/${groupId}/album/by-url?imageUrl=${encoded}`, {
+        method: "DELETE",
+    });
+}
+
+/**
+ * ===============================
+ * 앨범 삭제 (DELETE /groups/{groupId}/album/{albumId})
+ * ===============================
+ */
+export async function deleteAlbum(groupId: number, albumId: number): Promise<{ message: string }> {
+    if (!Number.isFinite(groupId) || !Number.isFinite(albumId)) {
+        throw new Error("유효하지 않은 ID입니다.");
+    }
+
+    return fetcher(`${API_BASE}/groups/${groupId}/album/${albumId}`, {
+        method: "DELETE",
     });
 }
 
@@ -250,23 +261,64 @@ export async function deleteGroup(groupId: number) {
 
 /**
  * ===============================
- * 그룹 초대
+ * 그룹 초대 기능
  * ===============================
  */
-export async function createInviteLink(groupId: number) {
-    const token = localStorage.getItem("accessToken");
 
-    const res = await fetch(`${API_BASE}/invite/create/${groupId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
+// 초대 링크 생성 응답 타입
+export type InviteLinkResponse = {
+    token: string;
+    message: string;
+};
 
-    if (!res.ok) {
-        throw new Error("초대 링크 생성 실패");
+// 초대 정보 조회 응답 타입
+export type InviteInfoResponse = {
+    groupId: number;
+    name: string;
+    description: string;
+    imageUrl: string | null;
+};
+
+// 초대 수락 응답 타입
+export type AcceptInviteResponse = {
+    message: string;
+};
+
+/**
+ * 초대 링크 생성 (POST /groups/{groupId}/invite)
+ */
+export async function createInviteLink(groupId: number): Promise<InviteLinkResponse> {
+    if (!Number.isFinite(groupId)) {
+        throw new Error("유효하지 않은 그룹 ID입니다.");
     }
 
-    return res.json(); // { inviteLink: "https://..." }
+    return fetcher(`${API_BASE}/groups/${groupId}/invite`, {
+        method: "POST",
+    });
+}
+
+/**
+ * 초대 정보 조회 (GET /groups/invite/info?token={token})
+ */
+export async function fetchInviteInfo(token: string): Promise<InviteInfoResponse> {
+    if (!token) {
+        throw new Error("토큰이 필요합니다.");
+    }
+
+    return fetcher(`${API_BASE}/groups/invite/info?token=${token}`, {
+        method: "GET",
+    });
+}
+
+/**
+ * 초대 수락 (POST /groups/invite/accept?token={token})
+ */
+export async function acceptInvite(token: string): Promise<AcceptInviteResponse> {
+    if (!token) {
+        throw new Error("토큰이 필요합니다.");
+    }
+
+    return fetcher(`${API_BASE}/groups/invite/accept?token=${token}`, {
+        method: "POST",
+    });
 }

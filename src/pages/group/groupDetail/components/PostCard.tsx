@@ -1,7 +1,7 @@
 // src/pages/group/groupDetail/components/PostCard.tsx
 
 import { useState } from "react";
-import { toggleLike, deletePost } from "@/lib/api/posts";
+import { toggleLike, deletePost, Post } from "@/lib/api/posts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Heart,
@@ -35,15 +35,8 @@ import {
 import CommentList from "./CommentList";
 import CommentInput from "./CommentInput";
 
-type PostType = {
-    id: number;
-    userId: number;
-    nickname?: string;
-    images: string[];
-    content: string;
-    likeCount: number;
-    myLiked: boolean;
-    commentCount: number; // ← 추가됨
+type PostWithCommentCount = Post & {
+    commentCount: number;
 };
 
 type DeleteResponse = { message: string };
@@ -54,10 +47,10 @@ const PostCard = ({
                       userId,
                       onEdit,
                   }: {
-    post: PostType;
+    post: PostWithCommentCount;
     groupId: number;
     userId: number;
-    onEdit: (post: PostType) => void;
+    onEdit: (post: Post) => void;
 }) => {
     const queryClient = useQueryClient();
     const { toast } = useToast();

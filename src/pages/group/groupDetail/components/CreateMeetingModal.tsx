@@ -110,7 +110,7 @@ export const CreateMeetingModal = ({
     // Editing Mode
     // ------------------------------
     useEffect(() => {
-        if (editingMeeting) {
+        if (editingMeeting && open) {
             form.reset({
                 title: editingMeeting.title,
                 description: editingMeeting.description ?? "",
@@ -120,10 +120,18 @@ export const CreateMeetingModal = ({
                 location: editingMeeting.location ?? "",
                 singleDay: editingMeeting.startDate === editingMeeting.endDate,
             });
-        } else {
-            form.reset();
+        } else if (!open) {
+            form.reset({
+                title: "",
+                description: "",
+                startDate: "",
+                endDate: "",
+                time: "",
+                location: "",
+                singleDay: true,
+            });
         }
-    }, [editingMeeting]);
+    }, [editingMeeting, open, form]);
 
     const singleDay = form.watch("singleDay");
     const startDate = form.watch("startDate");
@@ -184,7 +192,9 @@ export const CreateMeetingModal = ({
                 description: editingMeeting ? "" : "캘린더에 일정이 추가되었습니다."
             });
             queryClient.invalidateQueries({ queryKey: ["meetings", groupId] });
+            queryClient.invalidateQueries({ queryKey: ["groupDetail", groupId] });
             queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+            queryClient.invalidateQueries({ queryKey: ["schedules"] });
             onOpenChange(false);
             form.reset();
         },
@@ -356,7 +366,7 @@ export const CreateMeetingModal = ({
                         <div className="p-4 rounded-lg border shadow-sm bg-gradient-to-br from-[#E9F5EC] to-white">
                             <h3 className="text-base font-semibold text-gray-800 mb-1">장소 선택이 고민되나요?</h3>
                             <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                                AI가 그룹의 활동 패턴을 분석해 가장 잘 맞는 장소를 추천해드릴게요.
+                                AI가 그룹활동 패턴을 분석해 가장 잘 맞는 장소를 추천해드려요.
                             </p>
 
                             <Button

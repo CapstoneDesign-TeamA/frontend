@@ -31,11 +31,11 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<UpdateP
 
 /**
  * 내 프로필 조회
- * GET /api/users/me
+ * GET /api/users/profile
  */
-export async function fetchMyProfile(): Promise<UpdateProfileResponse> {
-    const res = await fetcher("/users/me", {
+export async function fetchMyProfile(): Promise<any> {
+    const res = await fetcher("/users/profile", {
         method: "GET",
     });
-    return res as UpdateProfileResponse;
+    return res.data || res;
 }

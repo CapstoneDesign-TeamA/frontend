@@ -45,7 +45,29 @@ export async function fetcher(url: string, options: RequestInit = {}) {
         throw new Error(error || "API Error");
     }
 
-    // 파일 업로드 응답은 JSON
-    const json = await response.json();
-    return toCamel(json);
+    // 204 No Content 또는 빈 응답 처리
+    if (response.status === 204 || response.headers.get("content-length") === "0") {
+        return null;
+    }
+
+    // Content-Type 확인
+    const contentType = response.headers.get("content-type");
+
+    // JSON 응답인 경우
+    if (contentType && contentType.includes("application/json")) {
+        const json = await response.json();
+        return toCamel(json);
+    }
+
+    // Plain text 응답인 경우
+    const text = await response.text();
+
+    // JSON 파싱 시도
+    try {
+        const json = JSON.parse(text);
+        return toCamel(json);
+    } catch {
+        // JSON이 아니면 텍스트 그대로 반환
+        return { message: text };
+    }
 }

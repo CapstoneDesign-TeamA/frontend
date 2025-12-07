@@ -70,10 +70,10 @@ const Signup = () => {
         try {
             setLoading(true);
 
+            // ★ 여러 개 입력 가능하도록 수정
             const interestsArray = formData.interests
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean);
+                ? formData.interests.split(',').map(s => s.trim()).filter(Boolean)
+                : [];
 
             const payload = {
                 nickname: formData.nickname,

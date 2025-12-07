@@ -1,10 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchFeed } from "@/lib/api/posts";
+import { fetchFeed, Post } from "@/lib/api/posts";
 import PostCard from "./PostCard";
 
-const FeedList = ({ groupId, userId }) => {
-    const { data: feed } = useQuery({
-        // ★ feed queryKey 통일
+
+const FeedList = ({
+    groupId,
+    userId,
+    onEditPost
+}: {
+    groupId: number;
+    userId: number;
+    onEditPost?: (post: Post) => void;
+}) => {
+    const { data: feed } = useQuery<Post[]>({
         queryKey: ["feed", groupId],
         queryFn: () => fetchFeed(groupId),
     });
@@ -14,10 +22,17 @@ const FeedList = ({ groupId, userId }) => {
     return (
         <div className="flex flex-col gap-4">
             {feed.map((post) => (
-                <PostCard key={post.id} post={post} groupId={groupId} userId={userId} />
+                <PostCard
+                    key={post.id}
+                    post={{ ...post, commentCount: post.commentCount ?? 0 }}
+                    groupId={groupId}
+                    userId={userId}
+                    onEdit={onEditPost || (() => {})}
+                />
             ))}
         </div>
     );
 };
 
 export default FeedList;
+
